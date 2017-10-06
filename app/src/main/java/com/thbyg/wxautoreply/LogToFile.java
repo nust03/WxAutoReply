@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.text.format.Formatter;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -75,6 +76,9 @@ public class LogToFile {
         }
     }
 
+    public static void toast(String str) {
+        Toast.makeText(AppContext.getContext(), str, Toast.LENGTH_LONG).show();
+    }
     /**
      * 写入日志文件的数据
      *
@@ -148,7 +152,7 @@ public class LogToFile {
      *
      * @return APP日志文件
      */
-    private static File getLogFile() {
+    public static File getLogFile() {
         File file;
         // 判断是否有SD卡或者外部存储器
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {

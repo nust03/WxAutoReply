@@ -144,6 +144,36 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * 遍历所有节点并打印
+     */
+    public void printNodeInfo() {
+        AccessibilityNodeInfo rowNode = getRootInActiveWindow();
+        LogToFile.write("==============================================");
+        if (rowNode == null) {
+            LogToFile.write("noteInfo is　null");
+
+        } else {
+            recycle(rowNode);
+        }
+        LogToFile.write("==============================================");
+    }
+
+    public void recycle(AccessibilityNodeInfo info) {
+        if (info.getChildCount() == 0) {
+            LogToFile.write("child widget----------------------------" + info.getClassName());
+            LogToFile.write("showDialog:" + info.canOpenPopup());
+            LogToFile.write("Text：" + info.getText());
+            LogToFile.write("windowId:" + info.getWindowId());
+        } else {
+            for (int i = 0; i < info.getChildCount(); i++) {
+                if (info.getChild(i) != null) {
+                    recycle(info.getChild(i));
+                }
+            }
+        }
+    }
+
+    /**
      * 查找对应文本的View
      *
      * @param text text

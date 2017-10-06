@@ -1,17 +1,22 @@
 package com.thbyg.wxautoreply;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Toast;
 
 import static com.thbyg.wxautoreply.RootShellCmd.execShellCmd;
 
 public class MainActivity extends AppCompatActivity {
     RadioGroup radiogroup;
     EditText edit_text;
+    private PackageManager mPackageManager;
+    private String[] mPackages;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -21,8 +26,22 @@ public class MainActivity extends AppCompatActivity {
 
         radiogroup = (RadioGroup)findViewById(R.id.radiogroup1);
         radiogroup.setOnCheckedChangeListener(mylistener);
+        BaseAccessibilityService.getInstance().init(this);
+        mPackageManager = this.getPackageManager();
+        mPackages = new String[]{"com.tencent.mm"};
         //LogToFile.write("sample text");
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        edit_text = (EditText) findViewById(R.id.et_AutoInput);
+        edit_text.setText("");
+        edit_text.setFocusable(true);
+        edit_text.setFocusableInTouchMode(true);
+        edit_text.requestFocus();
+    }
+
     RadioGroup.OnCheckedChangeListener mylistener=new RadioGroup.OnCheckedChangeListener()
     {
         @Override
@@ -46,5 +65,34 @@ public class MainActivity extends AppCompatActivity {
         String cmd = edit_text.getText().toString().trim();
         RootShellCmd.execShellCmd(cmd);
 
+    }
+
+    /*
+btn_Open_Accessibility按钮点击事件，用来判断辅助服务是否开启。
+ */
+    public void btn_Open_Accessibility(View view) {
+        if (BaseAccessibilityService.getInstance().checkAccessibilityEnabled("com.thbyg.wxautoreply/.AutomationService")) {
+            Toast.makeText(this, "com.thbyg.wxautoreply/.AutomationService 辅助服务已开启。", Toast.LENGTH_SHORT).show();
+        } else {
+            BaseAccessibilityService.getInstance().goAccess();
+        }
+    }
+
+    /*
+    btn_Open_App按钮点击事件，用来启动微信。
+     */
+    public void btn_Open_App(View view) {
+        Intent intent = mPackageManager.getLaunchIntentForPackage("com.tencent.mm");
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        //startActivity(intent);
+
+        //BaseAccessibilityService.getInstance().printNodeInfo();
+    }
+
+
+    public void btn_SendLogMail(View view) {
+        String path = LogToFile.getLogFile().getPath();
+        MailManager.getInstance().sendMailWithFile("15651499096@wo.cn", "APP运行日志", "APP run log.", path);
+        Toast.makeText(this, "发送邮件到15651499096@wo.cn成功。", Toast.LENGTH_SHORT).show();
     }
 }

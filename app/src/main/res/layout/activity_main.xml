@@ -131,6 +131,42 @@
 
         <TableRow
             android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:text="Open Accessibility"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="btn_Open_Accessibility"
+                android:id="@+id/btn_Open_Accessibility" />
+
+            <Button
+                android:text="Open App"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="btn_Open_App"
+                android:id="@+id/btn_Open_App" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:text="发送日志邮件"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="btn_SendLogMail"
+                android:id="@+id/btn_SendLogMail" />
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </TableRow>
+        <TableRow
+            android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </TableLayout>
 

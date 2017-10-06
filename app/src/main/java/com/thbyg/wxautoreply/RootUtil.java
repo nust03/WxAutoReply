@@ -32,12 +32,8 @@ public class RootUtil  {
     public static boolean is_root() {
         boolean res = false;
         try {
-            if ((!new File("/system/bin/su").exists()) &&
-                    (!new File("/system/xbin/su").exists())) {
-                res = false;
-            } else {
-                res = true;
-            }
+            res = !((!new File("/system/bin/su").exists()) &&
+                    (!new File("/system/xbin/su").exists()));
         } catch (Exception e) {
 
         }
