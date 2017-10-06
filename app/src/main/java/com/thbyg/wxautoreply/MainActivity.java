@@ -1,9 +1,12 @@
 package com.thbyg.wxautoreply;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -68,11 +71,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /*
-btn_Open_Accessibility按钮点击事件，用来判断辅助服务是否开启。
- */
+    btn_Open_Accessibility按钮点击事件，用来判断辅助服务是否开启。
+     */
     public void btn_Open_Accessibility(View view) {
-        if (BaseAccessibilityService.getInstance().checkAccessibilityEnabled("com.thbyg.wxautoreply/.AutomationService")) {
-            Toast.makeText(this, "com.thbyg.wxautoreply/.AutomationService 辅助服务已开启。", Toast.LENGTH_SHORT).show();
+        final String service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
+        //boolean f = BaseAccessibilityService.getInstance().isAccessibilitySettingsOn(AppContext.getContext());
+        //if(f) LogToFile.toast(service + " 辅助服务已开启。");
+        //else LogToFile.toast(service + " 辅助服务未开启。");
+        if (BaseAccessibilityService.getInstance().checkAccessibilityEnabled(service)) {
+            Toast.makeText(this, service + " 辅助服务已开启。", Toast.LENGTH_SHORT).show();
         } else {
             BaseAccessibilityService.getInstance().goAccess();
         }
@@ -84,7 +91,7 @@ btn_Open_Accessibility按钮点击事件，用来判断辅助服务是否开启�
     public void btn_Open_App(View view) {
         Intent intent = mPackageManager.getLaunchIntentForPackage("com.tencent.mm");
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        //startActivity(intent);
+        startActivity(intent);
 
         //BaseAccessibilityService.getInstance().printNodeInfo();
     }

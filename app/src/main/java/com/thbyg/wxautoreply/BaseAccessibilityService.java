@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -73,6 +74,38 @@ public class BaseAccessibilityService extends AccessibilityService {
         return f;
     }
 
+    //判断服务是否打开
+    public boolean isAccessibilitySettingsOn(Context mContext) {
+        int accessibilityEnabled = 0;
+        final String service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(mContext.getApplicationContext().getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+            LogToFile.write("accessibilityEnabled = " + accessibilityEnabled);
+        } catch (Settings.SettingNotFoundException e) {
+            LogToFile.write("Error finding setting, default accessibility to not found: " + e.getMessage());
+        }
+        TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
+        if (accessibilityEnabled == 1) {
+            LogToFile.write("***ACCESSIBILITY IS ENABLED*** -----------------");
+            String settingValue = Settings.Secure.getString(mContext.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                mStringColonSplitter.setString(settingValue);
+                while (mStringColonSplitter.hasNext()) {
+                    String accessibilityService = mStringColonSplitter.next();
+                    LogToFile.write("-------------- > accessibilityService :: " + accessibilityService + " " + service);
+                    if (accessibilityService.equalsIgnoreCase(service)) {
+                        LogToFile.write("We've found the correct setting - accessibility is switched on!");
+                        return true;
+                    }
+                }
+            }
+        } else {
+            LogToFile.write("***ACCESSIBILITY IS DISABLED***");
+        }
+        return false;
+    }
     /**
      * 前往开启辅助服务界面
      */

@@ -34,7 +34,7 @@ public class AutomationService extends BaseAccessibilityService {
     @Override
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
-        LogToFile.write("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
+        LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
 
 
         switch (eventType) {
@@ -42,9 +42,11 @@ public class AutomationService extends BaseAccessibilityService {
                 LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
 
                 List<CharSequence> texts = event.getText();
+                //LogToFile.write("texts=" + texts.toString());
                 if (!texts.isEmpty()) {
                     for (CharSequence text : texts) {
                         String content = text.toString();
+                        //LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:content" + content);
                         if (!TextUtils.isEmpty(content)) {
                             locked = false;
                             background = true;
@@ -54,16 +56,20 @@ public class AutomationService extends BaseAccessibilityService {
                 }
                 break;
             case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+
                 LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
+
                 if (!hasAction) break;
                 itemNodeinfo = null;
                 String className = event.getClassName().toString();
+                LogToFile.write("className:" + className);
                 if (className.equals("com.tencent.mm.ui.LauncherUI")) {
                     if (fill()) {
                         send();
                     }
                 }
                 hasAction = false;
+
                 break;
         }
     }
@@ -139,7 +145,11 @@ public class AutomationService extends BaseAccessibilityService {
         hasAction = true;
         if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
             Notification notification = (Notification) event.getParcelableData();
+
+            //LogToFile.write("notification:" + notification.toString());
+            //LogToFile.write("getParcelableData:" + event.getParcelableData().toString());
             String content = notification.tickerText.toString();
+            //LogToFile.write("content:" + content);
             String[] cc = content.split(":");
             name = cc[0].trim();
             scontent = cc[1].trim();
@@ -156,6 +166,7 @@ public class AutomationService extends BaseAccessibilityService {
     private boolean fill() {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode != null) {
+            BaseAccessibilityService.getInstance().recycle(rootNode);
             return findEditText(rootNode, "Auto Reply");
         }
         return false;
