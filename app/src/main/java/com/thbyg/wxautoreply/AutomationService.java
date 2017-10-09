@@ -17,6 +17,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 
 public class AutomationService extends BaseAccessibilityService {
@@ -30,17 +31,20 @@ public class AutomationService extends BaseAccessibilityService {
     AccessibilityNodeInfo itemNodeinfo;
     private KeyguardManager.KeyguardLock kl;
     private Handler handler = new Handler();
-
+    private static AutomationService mService = null;
+    private static String[] autoplay_msg = new String[]{"[微笑][微笑][微笑]", "[玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰]", "[强][强][强]", "[拥抱][拥抱]", "[握手][握手]", "[拳头][拳头]", "[OK]", "OK", "ok", "好的", "NB", "好！"};
     @Override
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
-        LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
+        //LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
 
 
         switch (eventType) {
             case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED:
-                LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
 
+                LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
+                LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
+                //printNodeInfo();
                 List<CharSequence> texts = event.getText();
                 //LogToFile.write("texts=" + texts.toString());
                 if (!texts.isEmpty()) {
@@ -51,21 +55,30 @@ public class AutomationService extends BaseAccessibilityService {
                             locked = false;
                             background = true;
                             notifyWechat(event);
+
                         }
                     }
                 }
                 break;
             case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+                LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
 
                 LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
 
                 if (!hasAction) break;
+                printNodeInfo();
                 itemNodeinfo = null;
                 String className = event.getClassName().toString();
-                LogToFile.write("className:" + className);
-                if (className.equals("com.tencent.mm.ui.LauncherUI")) {
-                    if (fill()) {
+                String contentDesc = event.getContentDescription().toString();
+                LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
+                if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI")) {
+                    if (fill() && contentDesc.indexOf("内部管理群") >= 0) {
                         send();
+                        this.performBackClick();
+                        RootShellCmd.execShellCmd("input keyevent " + KeyEvent.KEYCODE_HOME);//模拟点击HOME键
+                    } else {
+                        this.performBackClick();
+                        //printNodeInfo();
                     }
                 }
                 hasAction = false;
@@ -90,7 +103,12 @@ public class AutomationService extends BaseAccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        mService = this;
         LogToFile.write("AutomationService is onServiceConnected.");
+    }
+
+    public static AutomationService getService() {
+        return mService;
     }
 
     /**
@@ -166,11 +184,12 @@ public class AutomationService extends BaseAccessibilityService {
     private boolean fill() {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode != null) {
-            BaseAccessibilityService.getInstance().recycle(rootNode);
-            return findEditText(rootNode, "Auto Reply");
+
+            return findEditText(rootNode, autoplay_msg[FuncTools.getRandom(autoplay_msg.length)]);
         }
         return false;
     }
+
 
     private boolean findEditText(AccessibilityNodeInfo rootNode, String content) {
         int count = rootNode.getChildCount();

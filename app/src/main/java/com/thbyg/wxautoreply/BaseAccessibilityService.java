@@ -65,8 +65,8 @@ public class BaseAccessibilityService extends AccessibilityService {
         List<AccessibilityServiceInfo> accessibilityServices =
                 mAccessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC);
         for (AccessibilityServiceInfo info : accessibilityServices) {
-            LogToFile.write("serviceName:" + info.getId());
-            if (info.getId().equals(serviceName)) {
+            LogToFile.write("info.getId():" + info.getId() + ",serviceName:" + serviceName);
+            if (info.getId().equalsIgnoreCase(serviceName)) {
                 f = true;
                 break;
             }
@@ -123,6 +123,33 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * 遍历所有节点并打印
+     */
+    public void printNodeInfo() {
+        AccessibilityNodeInfo rowNode = this.getRootInActiveWindow();
+        LogToFile.write("==============================================开始打印");
+        if (rowNode == null) {
+            LogToFile.write("noteInfo is　null");
+
+        } else {
+            recycle(rowNode);
+        }
+        LogToFile.write("==============================================结束打印");
+    }
+
+    public void recycle(AccessibilityNodeInfo info) {
+        LogToFile.write("node ChildCount=" + String.valueOf(info.getChildCount()) + ";info:" + info.toString());
+        if (info.getChildCount() == 0) {
+
+        } else {
+            for (int i = 0; i < info.getChildCount(); i++) {
+                if (info.getChild(i) != null) {
+                    recycle(info.getChild(i));
+                }
+            }
+        }
+    }
+    /**
      * 模拟点击事件
      *
      * @param nodeInfo nodeInfo
@@ -176,35 +203,7 @@ public class BaseAccessibilityService extends AccessibilityService {
         performGlobalAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
     }
 
-    /**
-     * 遍历所有节点并打印
-     */
-    public void printNodeInfo() {
-        AccessibilityNodeInfo rowNode = getRootInActiveWindow();
-        LogToFile.write("==============================================");
-        if (rowNode == null) {
-            LogToFile.write("noteInfo is　null");
 
-        } else {
-            recycle(rowNode);
-        }
-        LogToFile.write("==============================================");
-    }
-
-    public void recycle(AccessibilityNodeInfo info) {
-        if (info.getChildCount() == 0) {
-            LogToFile.write("child widget----------------------------" + info.getClassName());
-            LogToFile.write("showDialog:" + info.canOpenPopup());
-            LogToFile.write("Text：" + info.getText());
-            LogToFile.write("windowId:" + info.getWindowId());
-        } else {
-            for (int i = 0; i < info.getChildCount(); i++) {
-                if (info.getChild(i) != null) {
-                    recycle(info.getChild(i));
-                }
-            }
-        }
-    }
 
     /**
      * 查找对应文本的View

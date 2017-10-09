@@ -120,7 +120,7 @@
                     android:hint="模拟输入字符串" />
 
                 <RadioButton
-                    android:text="input tap 168 252"
+                    android:text="input tap 168 25"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/radioButton4"

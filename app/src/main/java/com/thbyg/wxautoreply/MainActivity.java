@@ -1,5 +1,6 @@
 package com.thbyg.wxautoreply;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -60,7 +61,10 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     public void btn_GetRoot(View view) {
+
         RootUtil.get_root();
+        //调用开发者选项中显示触摸位置功能
+        //android.provider.Settings.System.putInt(getContentResolver(), "show_touches", 1);
     }
 
     public void btn_execShellCmd(View view) {
@@ -74,10 +78,11 @@ public class MainActivity extends AppCompatActivity {
     btn_Open_Accessibility按钮点击事件，用来判断辅助服务是否开启。
      */
     public void btn_Open_Accessibility(View view) {
-        final String service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
+        final String service = "com.thbyg.wxautoreply/.AutomationService";
         //boolean f = BaseAccessibilityService.getInstance().isAccessibilitySettingsOn(AppContext.getContext());
         //if(f) LogToFile.toast(service + " 辅助服务已开启。");
         //else LogToFile.toast(service + " 辅助服务未开启。");
+        LogToFile.write("检查辅助服务是否开启？service=" + service);
         if (BaseAccessibilityService.getInstance().checkAccessibilityEnabled(service)) {
             Toast.makeText(this, service + " 辅助服务已开启。", Toast.LENGTH_SHORT).show();
         } else {
@@ -89,10 +94,16 @@ public class MainActivity extends AppCompatActivity {
     btn_Open_App按钮点击事件，用来启动微信。
      */
     public void btn_Open_App(View view) {
+        /*
         Intent intent = mPackageManager.getLaunchIntentForPackage("com.tencent.mm");
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-
+        */
+        Intent intent = new Intent();
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ComponentName componentName = new ComponentName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI");
+        intent.setComponent(componentName);
+        startActivity(intent);
         //BaseAccessibilityService.getInstance().printNodeInfo();
     }
 
