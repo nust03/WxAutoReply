@@ -6,7 +6,7 @@ import java.util.Random;
 
 import static java.lang.Thread.sleep;
 
-/**
+/**常用工具类
  * Created by myxiang on 2017/10/9.
  */
 

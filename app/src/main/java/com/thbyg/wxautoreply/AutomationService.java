@@ -55,7 +55,7 @@ public class AutomationService extends BaseAccessibilityService {
                             locked = false;
                             background = true;
                             notifyWechat(event);
-
+                            hasAction = true;
                         }
                     }
                 }
@@ -160,7 +160,7 @@ public class AutomationService extends BaseAccessibilityService {
      * @param event event
      */
     private void notifyWechat(AccessibilityEvent event) {
-        hasAction = true;
+
         if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
             Notification notification = (Notification) event.getParcelableData();
 
