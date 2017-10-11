@@ -95,7 +95,7 @@ public class LogToFile {
 
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(logFile, true));
-            bw.write(logStr);
+            bw.write("\r\n" + logStr);
             bw.write("\r\n");
             bw.flush();
         } catch (Exception e) {

@@ -1,7 +1,12 @@
 package com.thbyg.wxautoreply;
+import android.app.ActivityManager;
 import android.content.Context;
-
+import android.content.Intent;
+import android.text.TextUtils;
+import android.content.ComponentName;
 import java.io.File;
+import java.util.List;
+
 /**
  * Created by myxiang on 2017/10/5.
 
@@ -39,4 +44,7 @@ public class RootUtil  {
         }
         return res;
     }
+
+
+
 }

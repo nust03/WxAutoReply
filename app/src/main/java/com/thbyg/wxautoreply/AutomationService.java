@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Toast;
 
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class AutomationService extends BaseAccessibilityService {
 
     private final static String MM_PNAME = "com.tencent.mm";
     boolean hasAction = false;
+    boolean hasFriendRequest = false;
     boolean locked = false;
     boolean background = false;
     private String name;
@@ -33,6 +35,10 @@ public class AutomationService extends BaseAccessibilityService {
     private Handler handler = new Handler();
     private static AutomationService mService = null;
     private static String[] autoplay_msg = new String[]{"[微笑][微笑][微笑]", "[玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰]", "[强][强][强]", "[拥抱][拥抱]", "[握手][握手]", "[拳头][拳头]", "[OK]", "OK", "ok", "好的", "NB", "好！"};
+    String ChatName = "";
+    String ChatRecord = "";
+    String VideoSecond = "";
+
     @Override
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
@@ -46,6 +52,13 @@ public class AutomationService extends BaseAccessibilityService {
                 LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
                 //printNodeInfo();
                 List<CharSequence> texts = event.getText();
+                int pri = -1;
+                if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                    Notification notification = (Notification) event.getParcelableData();
+                    //LogToFile.write("actions:" + notification.actions.toString());
+                    pri = notification.priority;
+                }
+
                 //LogToFile.write("texts=" + texts.toString());
                 if (!texts.isEmpty()) {
                     for (CharSequence text : texts) {
@@ -55,7 +68,8 @@ public class AutomationService extends BaseAccessibilityService {
                             locked = false;
                             background = true;
                             notifyWechat(event);
-                            hasAction = true;
+                            if(pri == Notification.PRIORITY_HIGH || pri == Notification.PRIORITY_DEFAULT) hasAction = true;//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
+                            else if(pri == Notification.PRIORITY_MAX) {hasFriendRequest = true;}//加好友信息 PRIORITY_MAX = 2
                         }
                     }
                 }
@@ -64,25 +78,30 @@ public class AutomationService extends BaseAccessibilityService {
                 LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
 
                 LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
+                //printNodeInfo();
+                PrintNode pn = new PrintNode(this.getRootInActiveWindow());
 
-                if (!hasAction) break;
-                printNodeInfo();
-                itemNodeinfo = null;
-                String className = event.getClassName().toString();
-                String contentDesc = event.getContentDescription().toString();
-                LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
-                if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI")) {
-                    if (fill() && contentDesc.indexOf("内部管理群") >= 0) {
-                        send();
-                        this.performBackClick();
-                        RootShellCmd.execShellCmd("input keyevent " + KeyEvent.KEYCODE_HOME);//模拟点击HOME键
-                    } else {
-                        this.performBackClick();
-                        //printNodeInfo();
+                if (hasAction) {//有新消息进来，自动随机回复，仅回复群“内部管理群”的新信息
+                    //printNodeInfo();
+                    itemNodeinfo = null;
+                    String className = event.getClassName().toString();
+                    String contentDesc = event.getContentDescription().toString();
+                    LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
+                    if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI") && contentDesc.contains("内部管理群") ) {
+                        String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)];
+                        if (auto_replay_msg(msg) ) {
+                            send();
+                            LogToFile.write("自动回复信息:" + msg);
+                        }
                     }
+                    this.performBackClick();
+                    FuncTools.back2Home();
+                    //RootShellCmd.execShellCmd("input keyevent " + KeyEvent.KEYCODE_HOME);//模拟点击HOME键
+                    hasAction = false;
                 }
-                hasAction = false;
-
+                else if(hasFriendRequest) {
+                    //printNodeInfo();
+                }
                 break;
         }
     }
@@ -106,7 +125,103 @@ public class AutomationService extends BaseAccessibilityService {
         mService = this;
         LogToFile.write("AutomationService is onServiceConnected.");
     }
+    /**
+     * 遍历所有控件，找到头像Imagview，里面有对联系人的描述
+     */
+    private void GetChatName(AccessibilityNodeInfo node) {
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo node1 = node.getChild(i);
+            if ("android.widget.ImageView".equals(node1.getClassName()) && node1.isClickable()) {
+                //获取聊天对象,这里两个if是为了确定找到的这个ImageView是头像的
+                if (!TextUtils.isEmpty(node1.getContentDescription())) {
+                    ChatName = node1.getContentDescription().toString();
+                    if (ChatName.contains("头像")) {
+                        ChatName = ChatName.replace("头像", "");
+                    }
+                }
 
+            }
+            GetChatName(node1);
+        }
+    }
+    /**
+     * 遍历所有控件:这里分四种情况
+     * 文字聊天: 一个TextView，并且他的父布局是android.widget.RelativeLayout
+     * 语音的秒数: 一个TextView，并且他的父布局是android.widget.RelativeLayout，但是他的格式是0"的格式，所以可以通过这个来区分
+     * 图片:一个ImageView,并且他的父布局是android.widget.FrameLayout,描述中包含“图片”字样（发过去的图片），发回来的图片现在还无法监听
+     * 表情:也是一个ImageView,并且他的父布局是android.widget.LinearLayout
+     * 小视频的秒数:一个TextView，并且他的父布局是android.widget.FrameLayout，但是他的格式是00:00"的格式，所以可以通过这个来区分
+     *
+     * @param node
+     */
+    public void GetChatRecord(AccessibilityNodeInfo node) {
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo nodeChild = node.getChild(i);
+
+            //聊天内容是:文字聊天(包含语音秒数)
+            if ("android.widget.TextView".equals(nodeChild.getClassName()) && "android.widget.RelativeLayout".equals(nodeChild.getParent().getClassName().toString())) {
+                if (!TextUtils.isEmpty(nodeChild.getText())) {
+                    String RecordText = nodeChild.getText().toString();
+                    //这里加个if是为了防止多次触发TYPE_VIEW_SCROLLED而打印重复的信息
+                    if (!RecordText.equals(ChatRecord)) {
+                        ChatRecord = RecordText;
+                        //判断是语音秒数还是正常的文字聊天,语音的话秒数格式为5"
+                        if (ChatRecord.contains("\"")) {
+                            LogToFile.write(ChatName + "发了一条" + ChatRecord + "的语音");
+                            LogToFile.toast(ChatName + "发了一条" + ChatRecord + "的语音");
+                        } else {
+                            //这里在加多一层过滤条件，确保得到的是聊天信息，因为有可能是其他TextView的干扰，例如名片等
+                            if (nodeChild.isLongClickable()) {
+                                LogToFile.write(ChatName + "：" + ChatRecord);
+                                LogToFile.toast(ChatName + "：" + ChatRecord);
+                            }
+
+                        }
+                        return;
+                    }
+                }
+            }
+
+            //聊天内容是:表情
+            if ("android.widget.ImageView".equals(nodeChild.getClassName()) && "android.widget.LinearLayout".equals(nodeChild.getParent().getClassName().toString())) {
+                Toast.makeText(this, ChatName+"发的是表情", Toast.LENGTH_SHORT).show();
+                LogToFile.write(ChatName + "：" + "发的是表情");
+                LogToFile.toast(ChatName + "：" + "发的是表情");
+
+                return;
+            }
+
+            //聊天内容是:图片
+            if ("android.widget.ImageView".equals(nodeChild.getClassName())) {
+                //安装软件的这一方发的图片（另一方发的暂时没实现）
+                if("android.widget.FrameLayout".equals(nodeChild.getParent().getClassName().toString())){
+                    if(!TextUtils.isEmpty(nodeChild.getContentDescription())){
+                        if(nodeChild.getContentDescription().toString().contains("图片")){
+                            LogToFile.write(ChatName + "：" + "发的是表情");
+                            LogToFile.toast(ChatName + "：" + "发的是图片");
+                        }
+                    }
+                }
+            }
+
+            //聊天内容是:小视频秒数,格式为00：00
+            if ("android.widget.TextView".equals(nodeChild.getClassName()) && "android.widget.FrameLayout".equals(nodeChild.getParent().getClassName().toString())) {
+                if (!TextUtils.isEmpty(nodeChild.getText())) {
+                    String second = nodeChild.getText().toString().replace(":", "");
+                    //正则表达式，确定是不是纯数字,并且做重复判断
+                    if (second.matches("[0-9]+") && !second.equals(VideoSecond)) {
+                        VideoSecond = second;
+                        LogToFile.write(ChatName + "：" + "发了一段" + nodeChild.getText().toString() + "的小视频");
+                        LogToFile.toast(ChatName + "：" + "发了一段" + nodeChild.getText().toString() + "的小视频");
+
+                    }
+                }
+
+            }
+
+            GetChatRecord(nodeChild);
+        }
+    }
     public static AutomationService getService() {
         return mService;
     }
@@ -163,14 +278,20 @@ public class AutomationService extends BaseAccessibilityService {
 
         if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
             Notification notification = (Notification) event.getParcelableData();
+            if(event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED  && event.getPackageName().equals(FuncTools.Wx_PackageName)) {
+                if(notification.priority == Notification.PRIORITY_HIGH || notification.priority == Notification.PRIORITY_DEFAULT)//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
+                {
+                    String content = notification.tickerText.toString();
+                    //LogToFile.write("content:" + content);
+                    String[] cc = content.split(":");
+                    name = cc[0].trim();
+                    scontent = cc[1].trim();
+                }
+                else if(notification.priority == Notification.PRIORITY_MAX) {//加好友信息 PRIORITY_MAX = 2
 
-            //LogToFile.write("notification:" + notification.toString());
-            //LogToFile.write("getParcelableData:" + event.getParcelableData().toString());
-            String content = notification.tickerText.toString();
-            //LogToFile.write("content:" + content);
-            String[] cc = content.split(":");
-            name = cc[0].trim();
-            scontent = cc[1].trim();
+                }
+
+            }
             PendingIntent pendingIntent = notification.contentIntent;
             try {
                 pendingIntent.send();
@@ -181,11 +302,11 @@ public class AutomationService extends BaseAccessibilityService {
     }
 
     @SuppressLint("NewApi")
-    private boolean fill() {
+    private boolean auto_replay_msg(String msg) {
         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
         if (rootNode != null) {
 
-            return findEditText(rootNode, autoplay_msg[FuncTools.getRandom(autoplay_msg.length)]);
+            return findEditText(rootNode, msg);
         }
         return false;
     }
@@ -195,14 +316,17 @@ public class AutomationService extends BaseAccessibilityService {
         int count = rootNode.getChildCount();
         for (int i = 0; i < count; i++) {
             AccessibilityNodeInfo nodeInfo = rootNode.getChild(i);
+
             if (nodeInfo == null) {
                 continue;
             }
+            //LogToFile.write("nodeinfo:" + nodeInfo.toString());
             if (nodeInfo.getContentDescription() != null) {
                 int nindex = nodeInfo.getContentDescription().toString().indexOf(name);
                 int cindex = nodeInfo.getContentDescription().toString().indexOf(scontent);
                 if (nindex != -1) {
                     itemNodeinfo = nodeInfo;
+                    //LogToFile.write("nodeinfo:" + nodeInfo.toString());
                 }
             }
             if ("android.widget.EditText".equals(nodeInfo.getClassName())) {
