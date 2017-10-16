@@ -6,10 +6,15 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
+import android.view.accessibility.AccessibilityNodeInfo;
+
+import android.app.Service;
 
 import java.util.List;
 import java.util.Random;
 
+
+import static android.content.Context.ACTIVITY_SERVICE;
 import static java.lang.Thread.sleep;
 
 /**常用工具类
@@ -17,10 +22,10 @@ import static java.lang.Thread.sleep;
  */
 
 public class FuncTools {
-    public static String Wx_PackageName = "com.tencent.mm";
-    public static void Delay(int second) {
-        int delay = 10;
-        int count = second / delay;
+
+    public static void delay(int msecond) {
+        int delay = 100;
+        int count = msecond/delay;
         for (int i = 0; i < count; i++) {
             try {
                 sleep(delay);
@@ -47,9 +52,10 @@ public class FuncTools {
      * @return
      */
     public static  boolean isAppForeground(String packageName) {
-        ActivityManager am = (ActivityManager) AppContext.getContext().getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager am = (ActivityManager) AppContext.getContext().getSystemService(ACTIVITY_SERVICE);
         ComponentName cn = am.getRunningTasks(1).get(0).topActivity;
         String currentPackageName = cn.getPackageName();
+        LogToFile.write(currentPackageName);
         if (!TextUtils.isEmpty(currentPackageName) && currentPackageName.equals(packageName)) {
             return true;
         }
@@ -62,9 +68,10 @@ public class FuncTools {
      * 将当前应用运行到前台
      */
     public static  void bring2Front(String PackageName) {
-        ActivityManager activtyManager = (ActivityManager) AppContext.getContext().getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager activtyManager = (ActivityManager) AppContext.getContext().getSystemService(ACTIVITY_SERVICE);
         List<ActivityManager.RunningTaskInfo> runningTaskInfos = activtyManager.getRunningTasks(3);
         for (ActivityManager.RunningTaskInfo runningTaskInfo : runningTaskInfos) {
+            LogToFile.write(runningTaskInfo.topActivity.getPackageName());
             if (PackageName.equals(runningTaskInfo.topActivity.getPackageName())) {
                 activtyManager.moveTaskToFront(runningTaskInfo.id, ActivityManager.MOVE_TASK_WITH_HOME);
                 return;

@@ -153,6 +153,13 @@
             android:layout_height="match_parent">
 
             <Button
+                android:text="删除日志文件"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="btn_DelLogFile"
+                android:id="@+id/btn_delLogFile" />
+
+            <Button
                 android:text="发送日志邮件"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

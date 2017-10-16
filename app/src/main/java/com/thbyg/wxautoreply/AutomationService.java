@@ -1,5 +1,7 @@
 package com.thbyg.wxautoreply;
 
+import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.SuppressLint;
 import android.app.KeyguardManager;
 import android.app.Notification;
@@ -17,8 +19,11 @@ import android.widget.Toast;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import static android.R.attr.accessibilityFlags;
 
 
 public class AutomationService extends BaseAccessibilityService {
@@ -28,83 +33,18 @@ public class AutomationService extends BaseAccessibilityService {
     boolean hasFriendRequest = false;
     boolean locked = false;
     boolean background = false;
-    private String name;
+    private String sname;
     private String scontent;
     AccessibilityNodeInfo itemNodeinfo;
     private KeyguardManager.KeyguardLock kl;
     private Handler handler = new Handler();
     private static AutomationService mService = null;
+    AccessibilityNodeInfo focused_node = null;
+    List<AccessibilityNodeInfo> nodelist = new ArrayList<AccessibilityNodeInfo>();
     private static String[] autoplay_msg = new String[]{"[微笑][微笑][微笑]", "[玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰]", "[强][强][强]", "[拥抱][拥抱]", "[握手][握手]", "[拳头][拳头]", "[OK]", "OK", "ok", "好的", "NB", "好！"};
     String ChatName = "";
     String ChatRecord = "";
     String VideoSecond = "";
-
-    @Override
-    public void onAccessibilityEvent(final AccessibilityEvent event) {
-        int eventType = event.getEventType();
-        //LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
-
-
-        switch (eventType) {
-            case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED:
-
-                LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
-                LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
-                //printNodeInfo();
-                List<CharSequence> texts = event.getText();
-                int pri = -1;
-                if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
-                    Notification notification = (Notification) event.getParcelableData();
-                    //LogToFile.write("actions:" + notification.actions.toString());
-                    pri = notification.priority;
-                }
-
-                //LogToFile.write("texts=" + texts.toString());
-                if (!texts.isEmpty()) {
-                    for (CharSequence text : texts) {
-                        String content = text.toString();
-                        //LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:content" + content);
-                        if (!TextUtils.isEmpty(content)) {
-                            locked = false;
-                            background = true;
-                            notifyWechat(event);
-                            if(pri == Notification.PRIORITY_HIGH || pri == Notification.PRIORITY_DEFAULT) hasAction = true;//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
-                            else if(pri == Notification.PRIORITY_MAX) {hasFriendRequest = true;}//加好友信息 PRIORITY_MAX = 2
-                        }
-                    }
-                }
-                break;
-            case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
-                LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
-
-                LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
-                //printNodeInfo();
-                PrintNode pn = new PrintNode(this.getRootInActiveWindow());
-
-                if (hasAction) {//有新消息进来，自动随机回复，仅回复群“内部管理群”的新信息
-                    //printNodeInfo();
-                    itemNodeinfo = null;
-                    String className = event.getClassName().toString();
-                    String contentDesc = event.getContentDescription().toString();
-                    LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
-                    if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI") && contentDesc.contains("内部管理群") ) {
-                        String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)];
-                        if (auto_replay_msg(msg) ) {
-                            send();
-                            LogToFile.write("自动回复信息:" + msg);
-                        }
-                    }
-                    this.performBackClick();
-                    FuncTools.back2Home();
-                    //RootShellCmd.execShellCmd("input keyevent " + KeyEvent.KEYCODE_HOME);//模拟点击HOME键
-                    hasAction = false;
-                }
-                else if(hasFriendRequest) {
-                    //printNodeInfo();
-                }
-                break;
-        }
-    }
 
     @Override
     public void onCreate() {
@@ -117,14 +57,139 @@ public class AutomationService extends BaseAccessibilityService {
     public void onDestroy() {
         super.onDestroy();
         LogToFile.write("AutomationService is onDestroy.");
+        LogToFile.toast("AutomationService is onDestroy.");
     }
 
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
         mService = this;
-        LogToFile.write("AutomationService is onServiceConnected.");
+        AccessibilityServiceInfo serviceInfo = new AccessibilityServiceInfo();
+        serviceInfo.flags = AccessibilityServiceInfo.DEFAULT |AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS |
+                AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        //serviceInfo.eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED | AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED | AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED | AccessibilityEvent.TYPE_VIEW_SCROLLED | AccessibilityEvent.TYPE_WINDOWS_CHANGED;
+        serviceInfo.eventTypes = AccessibilityEvent.TYPES_ALL_MASK;
+        serviceInfo.packageNames = new String[]{NodeFunc.Wx_PackageName};
+        serviceInfo.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
+        serviceInfo.notificationTimeout = 100;
+        setServiceInfo(serviceInfo);
+        LogToFile.write("AutomationService is onServiceConnected.serviceInfo=" + serviceInfo.toString());
+        LogToFile.toast("AutomationService is onServiceConnected.");
     }
+
+    @Override
+    public void onAccessibilityEvent(final AccessibilityEvent event) {
+        int eventType = event.getEventType();
+        //LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
+        LogToFile.write("eventType=" + String.format("0x%x,%s,event=%s", eventType, AccessibilityEvent.eventTypeToString(eventType), event.toString()));
+        //LogToFile.toast("eventType=" + String.format("0x%x,%s", eventType, AccessibilityEvent.eventTypeToString(eventType)));
+
+        if(locked == true) {
+            LogToFile.write("重复进入！");
+        }
+        else locked = true;
+        try {
+            switch (eventType) {
+                case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED:
+                    List<CharSequence> texts = event.getText();
+                    int pri = -1;
+                    if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                        Notification notification = (Notification) event.getParcelableData();
+                        //LogToFile.write("actions:" + notification.actions.toString());
+                        pri = notification.priority;
+                    }
+                    if (!texts.isEmpty()) {
+                        for (CharSequence text : texts) {
+                            String content = text.toString();
+                            //LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:content" + content);
+                            if (!TextUtils.isEmpty(content)) {
+                                locked = false;
+                                background = true;
+                                notifyWechat(event);
+                                if (pri == Notification.PRIORITY_HIGH || pri == Notification.PRIORITY_DEFAULT)
+                                    hasAction = true;//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
+                                else if (pri == Notification.PRIORITY_MAX) {
+                                    hasFriendRequest = true;
+                                }//加好友信息 PRIORITY_MAX = 2
+                            }
+                        }
+                    }
+                    break;
+                case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+                    //NodeFunc.clickParentNode(this.getRootInActiveWindow(),NodeFunc.Wx_BottomMenuSourceID,NodeFunc.Wx_BottomMenuName[0],true);
+
+                    if (hasAction) {//有新消息进来，自动随机回复，仅回复群“内部管理群”的新信息
+                        //printNodeInfo();
+                        itemNodeinfo = null;
+                        String className = event.getClassName().toString();
+                        String contentDesc = event.getContentDescription().toString();
+
+                        LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
+                        if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI") && contentDesc.contains("内部管理群") ) {
+                            String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + ",@" + sname;
+                            if (auto_replay_msg(msg) && sname.equalsIgnoreCase("史言兵")) {
+                                send();
+                                LogToFile.write("自动回复信息:" + msg);
+                            }
+                            if (sname.equalsIgnoreCase("史言兵")) {
+                                if (scontent.equalsIgnoreCase("Command")) {
+                                    LogToFile.write("接到返回微信主界面的命令,sname=" + sname);
+
+                                }
+                            }
+                        }
+
+                        this.performBackClick();
+                        FuncTools.back2Home();
+                        //RootShellCmd.execShellCmd("input keyevent " + KeyEvent.KEYCODE_HOME);//模拟点击HOME键
+                        hasAction = false;
+                    } else if (hasFriendRequest) {
+                        //printNodeInfo();
+                    }
+                    break;
+
+            }
+        }
+        catch (Exception e){
+            LogToFile.write("Fail!Error=" + e.getMessage());
+            LogToFile.toast("Fail!Error=" + e.getMessage());
+        }
+        locked = false;
+        LogToFile.write("locked:" + String.valueOf(locked));
+    }
+
+    /**
+     *返回到微信的主界面
+     */
+    public boolean back2WeChatMain(AccessibilityNodeInfo node)
+    {
+        boolean f = false;
+        int count = 0;
+        if(node != null){
+
+            AccessibilityNodeInfo wx_node = NodeFunc.findNodebyID_Text(node,NodeFunc.Wx_BottomMenuSourceID,NodeFunc.Wx_BottomMenuName[0]);
+            AccessibilityNodeInfo wx_main_dyh_node = NodeFunc.findNodebyID_Text(node,NodeFunc.Wx_MP_DYH_ID,NodeFunc.Wx_MP_DYH_Name);
+            while(count < 10) {
+                if(wx_node == null) {
+                    LogToFile.write("不在微信4个主界面内，执行返回点击。count=" + String.valueOf(count));
+                    this.performBackClick();
+                    FuncTools.delay(NodeFunc.delay_after_click);
+                }
+                else {
+                    if(wx_main_dyh_node == null){
+                        LogToFile.write("在微信4个主界面内，执行点击返回主界面。count=" + String.valueOf(count));
+                        wx_node = NodeFunc.clickParentNode(node,NodeFunc.Wx_BottomMenuSourceID,NodeFunc.Wx_BottomMenuName[0],true);
+                    }
+                    else break;
+                }
+                wx_node = NodeFunc.findNodebyID_Text(node,NodeFunc.Wx_BottomMenuSourceID,NodeFunc.Wx_BottomMenuName[0]);
+                wx_main_dyh_node = NodeFunc.findNodebyID_Text(node,NodeFunc.Wx_MP_DYH_ID,NodeFunc.Wx_MP_DYH_Name);
+                count ++;
+            }
+        }
+        return f;
+    }
+
     /**
      * 遍历所有控件，找到头像Imagview，里面有对联系人的描述
      */
@@ -278,13 +343,13 @@ public class AutomationService extends BaseAccessibilityService {
 
         if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
             Notification notification = (Notification) event.getParcelableData();
-            if(event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED  && event.getPackageName().equals(FuncTools.Wx_PackageName)) {
+            if(event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED  && event.getPackageName().equals(NodeFunc.Wx_PackageName)) {
                 if(notification.priority == Notification.PRIORITY_HIGH || notification.priority == Notification.PRIORITY_DEFAULT)//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
                 {
                     String content = notification.tickerText.toString();
                     //LogToFile.write("content:" + content);
                     String[] cc = content.split(":");
-                    name = cc[0].trim();
+                    sname = cc[0].trim();
                     scontent = cc[1].trim();
                 }
                 else if(notification.priority == Notification.PRIORITY_MAX) {//加好友信息 PRIORITY_MAX = 2
@@ -294,6 +359,7 @@ public class AutomationService extends BaseAccessibilityService {
             }
             PendingIntent pendingIntent = notification.contentIntent;
             try {
+                LogToFile.write("pendingIntent.toString():" + pendingIntent.toString());
                 pendingIntent.send();
             } catch (PendingIntent.CanceledException e) {
                 e.printStackTrace();
@@ -322,7 +388,7 @@ public class AutomationService extends BaseAccessibilityService {
             }
             //LogToFile.write("nodeinfo:" + nodeInfo.toString());
             if (nodeInfo.getContentDescription() != null) {
-                int nindex = nodeInfo.getContentDescription().toString().indexOf(name);
+                int nindex = nodeInfo.getContentDescription().toString().indexOf(sname);
                 int cindex = nodeInfo.getContentDescription().toString().indexOf(scontent);
                 if (nindex != -1) {
                     itemNodeinfo = nodeInfo;

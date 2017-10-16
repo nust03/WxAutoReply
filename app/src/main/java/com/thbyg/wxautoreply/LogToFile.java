@@ -27,11 +27,11 @@ public class LogToFile {
     /**
      * 用于保存日志的文件
      */
-    private static File         logFile;
+    public static File         logFile;
     /**
      * 日志中的时间显示格式
      */
-    private static       SimpleDateFormat logSDF       = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static       SimpleDateFormat logSDF       = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     /**
      * 日志的最大占用空间 - 单位：字节
      * <p>
@@ -86,6 +86,32 @@ public class LogToFile {
      */
     public static void write(Object str) {
         // 判断是否初始化或者初始化是否成功
+        logFile = getLogFile();
+        if (null == mContext || null == instance || null == logFile || !logFile.exists()) {
+            Log.e(MY_TAG, "Initialization failure !!!");
+            return;
+        }
+        String logStr = getFunctionInfo() + " - " + str.toString();
+        Log.i(tag, logStr);
+
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(logFile, true));
+            bw.write("\r\n" + logStr);
+            bw.write("\r\n");
+            bw.flush();
+        } catch (Exception e) {
+            Log.e(tag, "Write failure !!! " + e.toString());
+        }
+    }
+    /**
+     * 写入到特定的日志文件的数据
+     *
+     * @param str 需要写入的数据
+     */
+    public static void write(Object str,String filename) {
+        // 判断是否初始化或者初始化是否成功
+        //delLogFile(filename);
+        logFile = getLogFile(filename);
         if (null == mContext || null == instance || null == logFile || !logFile.exists()) {
             Log.e(MY_TAG, "Initialization failure !!!");
             return;
@@ -178,6 +204,110 @@ public class LogToFile {
             }
         }
         return logFile;
+    }
+    /**
+     * 获取APP日志文件，根据文件名
+     *
+     * @return APP日志文件
+     */
+    public static File getLogFile(String filename) {
+        File file;
+        // 判断是否有SD卡或者外部存储器
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            // 有SD卡则使用SD - PS:没SD卡但是有外部存储器，会使用外部存储器
+            // SD\Android\data\包名\files\Log\logs.txt
+            file = new File(mContext.getExternalFilesDir("Log").getPath() + "/");
+        } else {
+            // 没有SD卡或者外部存储器，使用内部存储器
+            // \data\data\包名\files\Log\logs.txt
+            file = new File(mContext.getFilesDir().getPath() + "/Log/");
+        }
+        // 若目录不存在则创建目录
+        if (!file.exists()) {
+            file.mkdir();
+        }
+        File logFile = new File(file.getPath() + "/" + filename + ".txt");
+        //Log.d(MY_TAG,"logFile Path:" + file.getPath() + "/logs.txt");
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (Exception e) {
+                Log.e(MY_TAG, "Create log file failure !!! " + e.toString());
+            }
+        }
+        return logFile;
+    }
+    /**
+     * 删除APP日志文件
+     *
+     * @return 删除成功返回true，否则false。
+     */
+    public static boolean delLogFile() {
+        File file;
+        boolean f = false;
+        // 判断是否有SD卡或者外部存储器
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            // 有SD卡则使用SD - PS:没SD卡但是有外部存储器，会使用外部存储器
+            // SD\Android\data\包名\files\Log\logs.txt
+            file = new File(mContext.getExternalFilesDir("Log").getPath() + "/");
+        } else {
+            // 没有SD卡或者外部存储器，使用内部存储器
+            // \data\data\包名\files\Log\logs.txt
+            file = new File(mContext.getFilesDir().getPath() + "/Log/");
+        }
+        // 若目录不存在则创建目录
+        if (!file.exists()) {
+            f = true;
+            return f;
+        }
+        File logFile = new File(file.getPath() + "/logs.txt");
+        //Log.d(MY_TAG,"logFile Path:" + file.getPath() + "/logs.txt");
+        if (logFile.exists()) {
+            try {
+                logFile.delete();
+                f = true;
+            } catch (Exception e) {
+                f = false;
+                Log.e(MY_TAG, "Delete log file failure !!! " + e.toString());
+            }
+        }
+        return f;
+    }
+    /**
+     * 删除APP指定日志文件
+     *
+     * @return 删除成功返回true，否则false。
+     */
+    public static boolean delLogFile(String filename) {
+        File file;
+        boolean f = false;
+        // 判断是否有SD卡或者外部存储器
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            // 有SD卡则使用SD - PS:没SD卡但是有外部存储器，会使用外部存储器
+            // SD\Android\data\包名\files\Log\logs.txt
+            file = new File(mContext.getExternalFilesDir("Log").getPath() + "/");
+        } else {
+            // 没有SD卡或者外部存储器，使用内部存储器
+            // \data\data\包名\files\Log\logs.txt
+            file = new File(mContext.getFilesDir().getPath() + "/Log/");
+        }
+        // 若目录不存在则创建目录
+        if (!file.exists()) {
+            f = true;
+            return f;
+        }
+        File logFile = new File(file.getPath() + "/" + filename + ".txt");
+        //Log.d(MY_TAG,"logFile Path:" + file.getPath() + "/logs.txt");
+        if (logFile.exists()) {
+            try {
+                logFile.delete();
+                f = true;
+            } catch (Exception e) {
+                f = false;
+                Log.e(MY_TAG, "Delete log file failure !!! " + e.toString());
+            }
+        }
+        return f;
     }
 
     /**

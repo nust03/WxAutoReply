@@ -94,23 +94,34 @@ public class MainActivity extends AppCompatActivity {
     btn_Open_App按钮点击事件，用来启动微信。
      */
     public void btn_Open_App(View view) {
-        /*
+/*
         Intent intent = mPackageManager.getLaunchIntentForPackage("com.tencent.mm");
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        intent.setFlags(Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY);
         startActivity(intent);
+
+
+        boolean f = FuncTools.isAppForeground(NodeFunc.Wx_PackageName);
+        LogToFile.toast("f=" + String.valueOf(f));
+        FuncTools.bring2Front(NodeFunc.Wx_PackageName);
         */
+
         Intent intent = new Intent();
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK );
         ComponentName componentName = new ComponentName("com.tencent.mm", "com.tencent.mm.ui.LauncherUI");
         intent.setComponent(componentName);
         startActivity(intent);
+
         //BaseAccessibilityService.getInstance().printNodeInfo();
     }
 
 
     public void btn_SendLogMail(View view) {
         String path = LogToFile.getLogFile().getPath();
-        MailManager.getInstance().sendMailWithFile("15651499096@wo.cn", "APP运行日志", "APP run log.", path);
-        Toast.makeText(this, "发送邮件到15651499096@wo.cn成功。", Toast.LENGTH_SHORT).show();
+        MailManager.getInstance().sendMailWithFile("nust03@163.com", "APP运行日志", "APP run log.", path);
+        Toast.makeText(this, "发送邮件到nust03@163.com成功。", Toast.LENGTH_SHORT).show();
+    }
+
+    public void btn_DelLogFile(View view) {
+        if(LogToFile.delLogFile()) LogToFile.toast("日志文件删除成功！file=" + LogToFile.logFile.getPath() + "/" + LogToFile.logFile.getName());
     }
 }

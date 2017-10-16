@@ -6,5 +6,8 @@
     android:packageNames="com.tencent.mm"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:notificationTimeout="100"
-    android:accessibilityFlags=""
+    android:accessibilityFlags="flagDefault"
+    android:canRequestTouchExplorationMode="true"
+    android:canRequestEnhancedWebAccessibility="true"
+    android:canRequestFilterKeyEvents="true"
     android:canRetrieveWindowContent="true"/>

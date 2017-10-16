@@ -125,26 +125,53 @@ public class BaseAccessibilityService extends AccessibilityService {
     /**
      * 遍历所有节点并打印
      */
-    public void printNodeInfo() {
+    public void printNodeInfo(List<AccessibilityNodeInfo> nodeList) {
         AccessibilityNodeInfo rowNode = this.getRootInActiveWindow();
         LogToFile.write("==============================================开始打印");
         if (rowNode == null) {
             LogToFile.write("noteInfo is　null");
 
         } else {
-            recycle(rowNode);
+            recycle(rowNode,nodeList,true);
         }
         LogToFile.write("==============================================结束打印");
     }
+    /**
+     * 遍历所有节点并打印
+     */
+    public void printNodeInfo(AccessibilityNodeInfo rowNode,List<AccessibilityNodeInfo> nodeList) {
+        LogToFile.write("==============================================开始打印");
+        if (rowNode == null) {
+            LogToFile.write("noteInfo is　null");
 
-    public void recycle(AccessibilityNodeInfo info) {
-        LogToFile.write("node ChildCount=" + String.valueOf(info.getChildCount()) + ";info:" + info.toString());
+        } else {
+            recycle(rowNode,nodeList,true);
+        }
+        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
+    }
+    /**
+     * 遍历所有节点并打印
+     */
+    public void printNodeInfo(AccessibilityNodeInfo rowNode,List<AccessibilityNodeInfo> nodeList,boolean isPrint) {
+        LogToFile.write("==============================================开始打印");
+        if (rowNode == null) {
+            LogToFile.write("noteInfo is　null");
+
+        } else {
+            recycle(rowNode,nodeList,isPrint);
+        }
+        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
+    }
+
+    public void recycle(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList,boolean isPrint) {
+        if(isPrint) LogToFile.write("node ChildCount=" + String.valueOf(info.getChildCount()) + ";info:" + info.toString());
+        nodeList.add(info);
         if (info.getChildCount() == 0) {
 
         } else {
             for (int i = 0; i < info.getChildCount(); i++) {
                 if (info.getChild(i) != null) {
-                    recycle(info.getChild(i));
+                    recycle(info.getChild(i),nodeList,isPrint);
                 }
             }
         }
@@ -171,11 +198,7 @@ public class BaseAccessibilityService extends AccessibilityService {
      * 模拟返回操作
      */
     public void performBackClick() {
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        FuncTools.delay(200);
         performGlobalAction(GLOBAL_ACTION_BACK);
     }
 
@@ -225,11 +248,14 @@ public class BaseAccessibilityService extends AccessibilityService {
     public AccessibilityNodeInfo findViewByText(String text, boolean clickable) {
         AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
         if (accessibilityNodeInfo == null) {
+            LogToFile.write("fail!");
             return null;
         }
         List<AccessibilityNodeInfo> nodeInfoList = accessibilityNodeInfo.findAccessibilityNodeInfosByText(text);
+        LogToFile.write(String.valueOf(nodeInfoList.size()));
         if (nodeInfoList != null && !nodeInfoList.isEmpty()) {
             for (AccessibilityNodeInfo nodeInfo : nodeInfoList) {
+                LogToFile.write(nodeInfo.toString());
                 if (nodeInfo != null && (nodeInfo.isClickable() == clickable)) {
                     return nodeInfo;
                 }
@@ -247,12 +273,14 @@ public class BaseAccessibilityService extends AccessibilityService {
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public AccessibilityNodeInfo findViewByID(String id) {
         AccessibilityNodeInfo accessibilityNodeInfo = getRootInActiveWindow();
-        if (accessibilityNodeInfo == null) {
+        if (accessibilityNodeInfo == null) {LogToFile.write("fail!");
             return null;
         }
         List<AccessibilityNodeInfo> nodeInfoList = accessibilityNodeInfo.findAccessibilityNodeInfosByViewId(id);
+        LogToFile.write(String.valueOf(nodeInfoList.size()));
         if (nodeInfoList != null && !nodeInfoList.isEmpty()) {
             for (AccessibilityNodeInfo nodeInfo : nodeInfoList) {
+                LogToFile.write(nodeInfo.toString());
                 if (nodeInfo != null) {
                     return nodeInfo;
                 }
