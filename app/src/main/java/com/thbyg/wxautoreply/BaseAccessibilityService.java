@@ -197,9 +197,17 @@ public class BaseAccessibilityService extends AccessibilityService {
     /**
      * 模拟返回操作
      */
-    public void performBackClick() {
-        FuncTools.delay(200);
+    public void performBackClick(int delay) {
         performGlobalAction(GLOBAL_ACTION_BACK);
+        FuncTools.delay(delay);
+    }
+
+    /**
+     * 模拟返回HOME操作
+     */
+    public void performHomeClick(int delay) {
+        performGlobalAction(GLOBAL_ACTION_HOME);
+        FuncTools.delay(delay);
     }
 
     /**

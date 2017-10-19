@@ -30,10 +30,17 @@ public class MainActivity extends AppCompatActivity {
 
         radiogroup = (RadioGroup)findViewById(R.id.radiogroup1);
         radiogroup.setOnCheckedChangeListener(mylistener);
-        BaseAccessibilityService.getInstance().init(this);
         mPackageManager = this.getPackageManager();
         mPackages = new String[]{"com.tencent.mm"};
-        //LogToFile.write("sample text");
+        BaseAccessibilityService.getInstance().init(this);
+        final String service = "com.thbyg.wxautoreply/.AutomationService";
+        LogToFile.write("检查辅助服务是否开启？service=" + service);
+        if (BaseAccessibilityService.getInstance().checkAccessibilityEnabled(service)) {
+            Toast.makeText(this, service + " 辅助服务已开启。", Toast.LENGTH_SHORT).show();
+        } else {
+            BaseAccessibilityService.getInstance().goAccess();
+
+        }
     }
 
     @Override
