@@ -46,6 +46,14 @@ public class NodeFunc {
     // “通讯录”界面 “新的朋友”的参数
     public static String Wx_NewFriend_Text = "新的朋友";
     public static String Wx_NewFriend_Class = "android.widget.TextView";
+    // 输入界面，“切换到按住说话”按钮的参数
+    public static String Wx_Switch2TalkBtn_ID = "com.tencent.mm:id/a6z";
+    public static String Wx_Switch2TalkBtn_Class = "android.widget.ImageButton";
+    public static String Wx_Switch2TalkBtn_Desc = "切换到按住说话";
+    // 输入界面，“切换到键盘”按钮的参数
+    public static String Wx_Switch2KeyboardBtn_ID = "com.tencent.mm:id/a6z";
+    public static String Wx_Switch2KeyboardBtn_Class = "android.widget.ImageButton";
+    public static String Wx_Switch2KeyboardBtn_Desc = "切换到键盘";
 
     /**
      * 根据text、ClassName获取NodeList,返回node数量

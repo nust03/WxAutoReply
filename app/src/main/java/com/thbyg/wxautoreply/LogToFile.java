@@ -31,7 +31,7 @@ public class LogToFile {
     /**
      * 日志中的时间显示格式
      */
-    private static       SimpleDateFormat logSDF       = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private static       SimpleDateFormat logSDF       = new SimpleDateFormat("MMdd HH:mm:ss.SSS");
     /**
      * 日志的最大占用空间 - 单位：字节
      * <p>
@@ -331,8 +331,8 @@ public class LogToFile {
                 continue;
             }
             tag = st.getFileName();
-            return "[" + logSDF.format(new java.util.Date()) + " " + st.getClassName() + " " + st
-                    .getMethodName() + " Line:" + st.getLineNumber() + "]";
+            return "[" + logSDF.format(new java.util.Date()) + " " + st.getMethodName() + " L" + st.getLineNumber() + "]";
+            //return "[" + logSDF.format(new java.util.Date()) + " " + st.getClassName() + " " + st.getMethodName() + " Line:" + st.getLineNumber() + "]";
         }
         return null;
     }

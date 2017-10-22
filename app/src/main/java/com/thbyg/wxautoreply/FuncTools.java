@@ -24,7 +24,7 @@ import static java.lang.Thread.sleep;
 public class FuncTools {
 
     public static void delay(int msecond) {
-        int delay = 100;
+        int delay = 50;
         int count = msecond/delay;
         for (int i = 0; i < count; i++) {
             try {

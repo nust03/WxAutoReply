@@ -60,8 +60,9 @@ public class RootShellCmd {
             dataOutputStream.flush();
             dataOutputStream.close();
             outputStream.close();
-        } catch (Throwable t) {
-            t.printStackTrace();
+            LogToFile.write("cmd=" + cmd + " 执行完毕！");
+        } catch (Exception e) {
+            LogToFile.write("execShellCmd Fail!Error=" + e.getMessage());
         }
     }
     /**

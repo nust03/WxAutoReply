@@ -43,7 +43,7 @@ public class BaseAccessibilityService extends AccessibilityService {
     public void init(Context context) {
         mContext = context.getApplicationContext();
         mAccessibilityManager = (AccessibilityManager) mContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
-
+        //List<AccessibilityServiceInfo> list =  mAccessibilityManager.
         LogToFile.write("BaseAccessibilityService init...");
     }
 
@@ -75,9 +75,9 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     //判断服务是否打开
-    public boolean isAccessibilitySettingsOn(Context mContext) {
+    public boolean isAccessibilitySettingsOn(Context mContext,String service) {
         int accessibilityEnabled = 0;
-        final String service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
+        //final String service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
         try {
             accessibilityEnabled = Settings.Secure.getInt(mContext.getApplicationContext().getContentResolver(),
                     android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
@@ -88,9 +88,9 @@ public class BaseAccessibilityService extends AccessibilityService {
         TextUtils.SimpleStringSplitter mStringColonSplitter = new TextUtils.SimpleStringSplitter(':');
         if (accessibilityEnabled == 1) {
             LogToFile.write("***ACCESSIBILITY IS ENABLED*** -----------------");
-            String settingValue = Settings.Secure.getString(mContext.getApplicationContext().getContentResolver(),
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            String settingValue = Settings.Secure.getString(mContext.getApplicationContext().getContentResolver(),Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
             if (settingValue != null) {
+                LogToFile.write("获取系统当前已打开辅助功能的服务,settingValue=" + settingValue);
                 mStringColonSplitter.setString(settingValue);
                 while (mStringColonSplitter.hasNext()) {
                     String accessibilityService = mStringColonSplitter.next();
