@@ -84,10 +84,17 @@ public class MainActivity extends AppCompatActivity {
         EditText edit_text = (EditText) findViewById(R.id.et_InputCMD);
         String cmd = edit_text.getText().toString().trim();
         RootShellCmd.execShellCmd(cmd);
-        final String my_service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
 
+    }
+    public void btn_Adb_Accessibility_Reboot(View view) {
+        final String my_service = getPackageName() + "/" + AutomationService.class.getCanonicalName();
         if(Valid_Open_Accessibility()) LogToFile.toast(my_service + " 辅助服务已开启。");
         else LogToFile.toast("Valid_Open_Accessibility return false.");
+        String command_str = "";
+        ShellUtils.CommandResult cr;
+        command_str = "ls -l";
+        cr = ShellUtils.execCommand(new String[]{command_str},true,true);
+        LogToFile.write("successMsg=" + cr.successMsg + ",errorMsg=" + cr.errorMsg + ",accessibility_enabled=" + cr.accessibility_enabled + ",enabled_accessibility_services=" + cr.enabled_accessibility_services);
 
     }
     /*
@@ -189,4 +196,6 @@ public class MainActivity extends AppCompatActivity {
         if (LogToFile.delLogFile())
             LogToFile.toast("日志文件删除成功！file=" + LogToFile.logFile.getPath() + "/" + LogToFile.logFile.getName());
     }
+
+
 }

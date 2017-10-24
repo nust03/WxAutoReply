@@ -90,6 +90,15 @@
                 android:layout_alignParentStart="true"
                 android:onClick="btn_execShellCmd"
                 android:id="@+id/btn_execShellCmd" />
+            <Button
+                android:text="Adb授权辅助并重启"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
+                android:onClick="btn_Adb_Accessibility_Reboot"
+                android:id="@+id/btn_Adb_Accessibility_Reboot" />
         </TableRow>
 
         <TableRow
@@ -141,11 +150,11 @@
                 android:id="@+id/btn_Open_Accessibility" />
 
             <Button
-                android:text="Open App"
+                android:id="@+id/btn_Open_App"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="btn_Open_App"
-                android:id="@+id/btn_Open_App" />
+                android:text="Open App" />
         </TableRow>
 
         <TableRow

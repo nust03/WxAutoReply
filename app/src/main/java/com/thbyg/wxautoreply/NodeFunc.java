@@ -54,7 +54,54 @@ public class NodeFunc {
     public static String Wx_Switch2KeyboardBtn_ID = "com.tencent.mm:id/a6z";
     public static String Wx_Switch2KeyboardBtn_Class = "android.widget.ImageButton";
     public static String Wx_Switch2KeyboardBtn_Desc = "切换到键盘";
+    // 微信界面，“订阅号”参数
+    public static String Wx_MPDYH_ID = "com.tencent.mm:id/ak1";
+    public static String Wx_MPDYH_Class = "android.view.View";
+    public static String Wx_MPDYH_Text = "订阅号";
+    //-----------------------订阅号界面开始--------------------------------------
+    // 订阅号界面，“公众号”参数
+    public static String Wx_MP_Account_ID = "com.tencent.mm:id/ak1";
+    public static String Wx_MP_Account_Class = "android.view.View";
+    //"订阅号"三个字的参数
+    public static String Wx_DYHUI_dyhWord_ID = "com.tencent.mm:id/h2";
+    public static String Wx_DYHUI_dyhWord_Class = "android.widget.TextView";
+    public static String Wx_DYHUI_dyhWord_Text = "订阅号";
+    //"订阅号界面  "返回"的参数
+    public static String Wx_DYHUI_back_ID = "com.tencent.mm:id/h1";
+    public static String Wx_DYHUI_back_Class = "android.widget.ImageView";
+    public static String Wx_DYHUI_back_Desc = "返回";
+    //-----------------------订阅号界面结束--------------------------------------
 
+    //-----------------------特定公众号图文界面开始--------------------------------------
+    // 订阅号阅读界面，单条图文的“公众号文章”参数
+    public static String Wx_Single_Article_ID = "com.tencent.mm:id/a82";
+    public static String Wx_Single_Article_Class = "android.widget.TextView";
+    public static String Wx_Single_Article_Text = "查看全文";
+    // 订阅号阅读界面，多条图文的头条“公众号文章”参数
+    public static String Wx_MulArticle_Header_ID = "com.tencent.mm:id/a7y";
+    public static String Wx_MulArticle_Header_Class = "android.widget.TextView";
+    // 订阅号阅读界面，多条图文的其他条“公众号文章”参数
+    public static String Wx_MulArticle_Other_ID = "com.tencent.mm:id/fv";
+    public static String Wx_MulArticle_Other_Class = "android.widget.TextView";
+    // 特定公众号图文界面，特定“公众号”参数
+    public static String Wx_TuWenUI_GZH_ID = "com.tencent.mm:id/h2";
+    public static String Wx_TuWenUI_GZH_Class = "android.widget.TextView";
+
+    //-----------------------特定公众号图文界面结束--------------------------------------
+
+    //-----------------------特定公众号图文阅读界面开始--------------------------------------
+    //公众号文章阅读界面，“返回”按钮的参数
+    public static String Wx_ReadArticle_Back_ID = "com.tencent.mm:id/hg";
+    public static String Wx_ReadArticle_Back_Class = "android.widget.ImageView";
+    public static String Wx_ReadArticle_Back_Desc = "返回";
+    // 特定公众号图文阅读界面，特定“公众号”参数
+    public static String Wx_TuWenReadUI_GZH_ID = "android:id/text1";
+    public static String Wx_TuWenReadUI_GZH_Class = "android.widget.TextView";
+    //特定公众号图文阅读界面，“网页由 mp.weixin.qq.com 提供”参数
+    public static String Wx_TuWenReadUI_WebPage_ID = "com.tencent.mm:id/djo";
+    public static String Wx_TuWenReadUI_WebPage_Class = "android.widget.TextView";
+    public static String Wx_TuWenReadUI_WebPage_Text = "网页由 mp.weixin.qq.com 提供";
+    //-----------------------特定公众号图文阅读界面结束--------------------------------------
     /**
      * 根据text、ClassName获取NodeList,返回node数量
      */
@@ -126,17 +173,17 @@ public class NodeFunc {
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
             if(nodeInfoList.size() == 0){
-                //LogToFile.write("根据ID=" + resource_id + "未发现节点！");
+                //LogToFile.write("根据ID=" + resource_id + "未发现节点！" + ",ClassName=" + ClassName);
             }
             else{
-                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
+                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()) + ",ClassName=" + ClassName);
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
                     String class_name = sub_node.getClassName().toString().trim();
                     if(ClassName.trim().equalsIgnoreCase(class_name) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
-                        //LogToFile.write("根据ID=" + resource_id + ",NodeText=" + ClassName + " 发现节点！");
+                        //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + " 发现节点！");
                         ret_nodeList.add(node);
                         count++;
                     }
@@ -155,17 +202,46 @@ public class NodeFunc {
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
             if(nodeInfoList.size() == 0){
-                LogToFile.write("根据ID=" + resource_id + "未发现节点！");
+                //LogToFile.write("根据ID=" + resource_id + "未发现节点！");
             }
             else{
-                LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
+                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
                     String nodetext = sub_node.getText().toString().trim();
                     if(NodeText.trim().equalsIgnoreCase(nodetext) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
-                        LogToFile.write("根据ID=" + resource_id + ",NodeText=" + NodeText + " 发现节点！");
+                        //LogToFile.write("根据ID=" + resource_id + ",NodeText=" + NodeText + " 发现节点！");
+                        break;
+                    }
+                }
+            }
+
+        }
+        return node;
+    }
+    /**
+     * 根据ID、Desc、ClassName获取Node
+     */
+    public static AccessibilityNodeInfo findNodebyID_Class_Desc(AccessibilityNodeInfo root_node , String resource_id, String NodeDesc, String ClassName)
+    {
+        AccessibilityNodeInfo node = null;
+        if(root_node != null){
+            List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
+            if(nodeInfoList.size() == 0){
+                //LogToFile.write("根据ID=" + resource_id + "未发现节点！" + ",ClassName=" + ClassName + ",NodeText=" + NodeText);
+            }
+            else{
+                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()) + ",ClassName=" + ClassName + ",NodeText=" + NodeText);
+                int i = 0 ;
+                for(AccessibilityNodeInfo sub_node : nodeInfoList)
+                {
+                    String nodedesc = sub_node.getContentDescription().toString().trim();
+                    String class_name = sub_node.getClassName().toString().trim();
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeDesc.trim().equalsIgnoreCase(nodedesc) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                        node  = sub_node;
+                        //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + ",NodeText=" + NodeText + " 发现节点！");
                         break;
                     }
                 }
@@ -183,10 +259,10 @@ public class NodeFunc {
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
             if(nodeInfoList.size() == 0){
-                //LogToFile.write("根据ID=" + resource_id + "未发现节点！");
+                //LogToFile.write("根据ID=" + resource_id + "未发现节点！" + ",ClassName=" + ClassName + ",NodeText=" + NodeText);
             }
             else{
-                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
+                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()) + ",ClassName=" + ClassName + ",NodeText=" + NodeText);
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
