@@ -679,7 +679,7 @@ public class AutomationService extends BaseAccessibilityService {
             if ("android.widget.ImageView".equals(node1.getClassName()) && node1.isClickable()) {
                 //获取聊天对象,这里两个if是为了确定找到的这个ImageView是头像的
                 if (!TextUtils.isEmpty(node1.getContentDescription())) {
-                    ChatName = NodeFunc.getContentDescription(node1);-
+                    ChatName = NodeFunc.getContentDescription(node1);
                     if (ChatName.contains("头像")) {
                         ChatName = ChatName.replace("头像", "");
                     }
