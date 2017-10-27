@@ -3,6 +3,8 @@ package com.thbyg.wxautoreply;
 import android.content.Context;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -102,6 +104,15 @@ public class NodeFunc {
     public static String Wx_TuWenReadUI_WebPage_Class = "android.widget.TextView";
     public static String Wx_TuWenReadUI_WebPage_Text = "网页由 mp.weixin.qq.com 提供";
     //-----------------------特定公众号图文阅读界面结束--------------------------------------
+
+    //-----------------------“发现”页面标识开始--------------------------------------
+    //“发现”页面，标识参数
+    public static String Wx_FindUI_Node_ID = "android:id/title";
+    public static String Wx_FindUI_Node_Class = "android.widget.TextView";
+    public static List<String> Wx_FindUI_Node_Text = new ArrayList<>(Arrays.asList("朋友圈","扫一扫","购物","游戏","小程序","摇一摇","看一看","搜一搜","附近的人"));
+    //-----------------------“发现”页面标识结束--------------------------------------
+
+
     /**
      * 根据text、ClassName获取NodeList,返回node数量
      */
@@ -374,6 +385,51 @@ public class NodeFunc {
 
         }
         return parent;
+    }
+    /**
+     *  获取node的 ContentDescription ，以防null错误；
+     */
+    public static String getContentDescription(AccessibilityNodeInfo node){
+        String ret_str = "";
+        try {
+            if (node != null) {
+                ret_str = node.getContentDescription() == null ? "" : node.getContentDescription().toString().trim();
+            }
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
+    }
+    /**
+     *  获取node的 ClassName ，以防null错误；
+     */
+    public static String getClassName(AccessibilityNodeInfo node){
+        String ret_str = "";
+        try {
+            if (node != null) {
+                ret_str = node.getClassName() == null ? "" : node.getClassName().toString().trim();
+            }
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
+    }
+    /**
+     *  获取node的Text ，以防null错误；
+     */
+    public static String getText(AccessibilityNodeInfo node){
+        String ret_str = "";
+        try {
+            if (node != null) {
+                ret_str = node.getText() == null ? "" : node.getText().toString().trim();
+            }
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
     }
 
 }
