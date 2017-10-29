@@ -158,6 +158,7 @@ public class BaseAccessibilityService extends AccessibilityService {
             LogToFile.write("noteInfo is　null");
 
         } else {
+            nodeList.clear();
             recycle(rowNode,nodeList,isPrint);
         }
         LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));

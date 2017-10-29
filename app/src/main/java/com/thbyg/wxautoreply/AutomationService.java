@@ -36,6 +36,7 @@ public class AutomationService extends BaseAccessibilityService {
     private String Bottom_Menu_Name = "";//底栏菜单按钮所在页面
     private boolean locked = false;
     private boolean background = false;
+    private String  stay_input_time = "";//在输入界面停留的循环次数
     private String sname;
     private String scontent;
     AccessibilityNodeInfo itemNodeinfo;
@@ -49,6 +50,7 @@ public class AutomationService extends BaseAccessibilityService {
     private String ChatRecord = "";
     private String VideoSecond = "";
     //endregion
+    //region 服务初始化函数
     @Override
     public void onCreate() {
         super.onCreate();
@@ -75,16 +77,18 @@ public class AutomationService extends BaseAccessibilityService {
         //serviceInfo.eventTypes = AccessibilityEvent.TYPES_ALL_MASK;
         serviceInfo.packageNames = new String[]{NodeFunc.Wx_PackageName};
         serviceInfo.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC;
-        serviceInfo.notificationTimeout = 1000;
+        serviceInfo.notificationTimeout = 500;
         setServiceInfo(serviceInfo);
         LogToFile.write("AutomationService is onServiceConnected.");
         LogToFile.toast("AutomationService is onServiceConnected.");
     }
-    //region * 处理服务事件函数
+    //endregion
+    //region * 处理服务事件函数 onAccessibilityEvent
     @Override
     //endregion
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
+        if(event.getPackageName().toString().equalsIgnoreCase(NodeFunc.Wx_PackageName) == false) return;
         LogToFile.write(String.format("=====处理 event=%s 开始...", AccessibilityEvent.eventTypeToString(eventType)));
         if(locked == true) {
             LogToFile.write("重复进入！");
@@ -94,6 +98,7 @@ public class AutomationService extends BaseAccessibilityService {
         try {
             switch (eventType) {
                 case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED:
+                    //region 处理 TYPE_NOTIFICATION_STATE_CHANGED 事件
                     if(hasAction == false && hasFriendRequest == false  && hasReadMPAticle == false) {
                         pre_notification_time = DateUtils.getCurrentTime();
                         dealNotificationEvent(event);//处理通知消息
@@ -109,6 +114,7 @@ public class AutomationService extends BaseAccessibilityService {
                         }
                     }
                     break;
+                    //endregion
                 default:
                     if(hasAction && default_run_count == 0){
                         dealAutoReplay(event);//处理自动回复消息
@@ -118,14 +124,30 @@ public class AutomationService extends BaseAccessibilityService {
                         dealNewfriendRequest(event);//处理好友请求
                         default_run_count++;
                     }
-                    if(hasReadMPAticle && default_run_count == 0){
+                    if(hasReadMPAticle && default_run_count == 0){//处理阅读公众号文章
                         dealReadMPArticle(event);
                         default_run_count++;
                     }
                     if(hasAction == false && hasFriendRequest == false && hasReadMPAticle == false  && default_run_count == 0){
                         Bottom_Menu_Name = "";
                         switch2Keyboard(event);//判断是否有“切换到键盘”按钮，如有切换到输入界面
-                        goBottomFindMenu(event);//设置到“发现”页面
+                        List<AccessibilityNodeInfo> node_list = new ArrayList<AccessibilityNodeInfo>();
+                        int node_count = NodeFunc.findNodebyClass_Desc(this.getRootInActiveWindow(),NodeFunc.Wx_Switch2TalkBtn_Class,NodeFunc.Wx_Switch2TalkBtn_Desc,node_list);
+                        if(node_count > 0 ) {//通过判断当前页面是否有输入按钮，来判断是否在聊天界面
+                            String current_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
+                            if(stay_input_time.isEmpty()) stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
+                            int second = DateUtils.compareTime(stay_input_time,current_time,3);
+                            if(second >= 1) goMoments(event);//设置到“朋友圈”页面
+                            LogToFile.write("停留在输入界面时长，stay_input_time=" + stay_input_time + ",current_time=" + current_time + ",时长=" + String.valueOf(second));
+                        }
+                        else{
+                            stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
+                            LogToFile.write("未发现输入按钮，初始化时间stay_input_time=" + stay_input_time);
+
+                        }
+                        //goSettingUI(event);//设置到“设置”页面
+                        //goDYHUI(event);//设置到“订阅号”页面
+
                         //default_run_count++;
                     }
             }
@@ -139,10 +161,101 @@ public class AutomationService extends BaseAccessibilityService {
                 + ",hasFriendRequest=" + String.valueOf(hasFriendRequest) + ",hasFriendRequestCount=" + String.valueOf(hasFriendRequestCount));
         LogToFile.write(String.format("=====处理 event=%s 结束！default_run_count=%d", AccessibilityEvent.eventTypeToString(eventType),default_run_count));
     }
-    //region 设置到“发现”页面
+    //region 跳转到 聊天 页面 goGroupChatUI(AccessibilityEvent event)
     //endregion
-    public void goBottomFindMenu(AccessibilityEvent event){
-        LogToFile.write("设置到“发现”页面开始运行,goBottomFindMenu is running...");
+    public void goGroupChatUI(String GroupName){
+        LogToFile.write("跳转到 聊天 " + GroupName + " 页面开始运行,goGroupChatUI is running...");
+        int success_click_btn_count = 0;
+        int delay_after_click = 1000;//click后延迟 1000 毫秒
+        int find_text_count = 0;
+        List<AccessibilityNodeInfo> chat_record_node_list = new ArrayList<AccessibilityNodeInfo>();
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+
+        try{
+            //this.printNodeInfo(find_node_list);
+            int node_count = NodeFunc.findNodebyID_Class(this.getRootInActiveWindow(),NodeFunc.Wx_ChatRecord_Node_ID,NodeFunc.Wx_ChatRecord_Node_Class,chat_record_node_list);
+
+            if(node_count > 0){
+
+                for(AccessibilityNodeInfo node : chat_record_node_list){
+                    if(node.getText() != null) {
+                        if(GroupName.equalsIgnoreCase(NodeFunc.getText(node))){
+                            find_text_count++;
+                            AccessibilityNodeInfo click_find_node = NodeFunc.getClickableParentNode(node);
+                            if (click_find_node != null) {
+                                if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                                    LogToFile.write("进入“" + GroupName + "” 聊天页面成功。");
+                                    FuncTools.delay(delay_after_click);
+                                    success_click_btn_count++;
+                                    this.printNodeInfo(this.getRootInActiveWindow(),all_node_list,false);
+                                } else {
+                                    LogToFile.write("进入“" + GroupName + "”聊天页面失败。");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }catch (Exception e){
+            LogToFile.write("goGroupChatUI Fail!Error=" + e.getMessage());
+            LogToFile.toast("goGroupChatUI Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("跳转到 聊天 " + GroupName + " 页面 运行结束,goGroupChatUI run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+        }
+    }
+
+
+    //region 设置到“订阅号”页面 goDYHUI(AccessibilityEvent event)
+    //endregion
+    public void goDYHUI(AccessibilityEvent event){
+        LogToFile.write("设置到“订阅号”页面开始运行,goDYHUI is running...");
+        int success_click_btn_count = 0;
+        int delay_after_click = 1000;//click后延迟 1000 毫秒
+        int find_text_count = 0;
+        List<AccessibilityNodeInfo> find_node_list = new ArrayList<AccessibilityNodeInfo>();
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        int line = 0;
+        try{
+            //this.printNodeInfo(find_node_list);
+            int node_count = NodeFunc.findNodebyID_Class(this.getRootInActiveWindow(),NodeFunc.Wx_MPDYH_ID,NodeFunc.Wx_MPDYH_Class,find_node_list);
+            LogToFile.write(String.valueOf(line++));
+            if(node_count > 0){
+                //LogToFile.write("node_count=" + String.valueOf(node_count));
+                for(AccessibilityNodeInfo node : find_node_list){
+                    if(node.getText() != null) {
+                        if("订阅号".equalsIgnoreCase(NodeFunc.getText(node))){
+                            find_text_count++;
+                            AccessibilityNodeInfo click_find_node = NodeFunc.getClickableParentNode(node);
+                            if (click_find_node != null) {
+                                if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                                    LogToFile.write("点击“订阅号”按钮成功。");
+                                    Bottom_Menu_Name = "订阅号";
+                                    FuncTools.delay(delay_after_click);
+                                    success_click_btn_count++;
+                                    this.printNodeInfo(this.getRootInActiveWindow(),all_node_list,false);
+                                } else {
+                                    LogToFile.write("点击“订阅号”按钮失败。");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            LogToFile.write(String.valueOf(line++));
+        }catch (Exception e){
+            LogToFile.write("goDYHUI Fail!Error=" + e.getMessage());
+            LogToFile.toast("goDYHUI Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("设置到“订阅号”页面 运行结束,goDYHUI run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+        }
+    }
+
+
+    //region 设置到“设置”页面 goSettingUI(AccessibilityEvent event)
+    //endregion
+    public void goSettingUI(AccessibilityEvent event){
+        LogToFile.write("设置到“设置”页面开始运行,goSettingUI is running...");
         int success_click_btn_count = 0;
         int delay_after_click = 200;//click后延迟 500 毫秒
         int find_text_count = 0;
@@ -155,18 +268,18 @@ public class AutomationService extends BaseAccessibilityService {
                 //LogToFile.write("node_count=" + String.valueOf(node_count));
                 for(AccessibilityNodeInfo node : find_node_list){
                     if(node.getText() != null) {
-                        if (NodeFunc.Wx_FindUI_Node_Text.contains(NodeFunc.getText(node))) {
+                        if (NodeFunc.Wx_WoUI_Node_Text.contains(NodeFunc.getText(node))) {
                             find_text_count++;
                         }
-                        if("朋友圈".equalsIgnoreCase(NodeFunc.getText(node))){
+                        if("设置".equalsIgnoreCase(NodeFunc.getText(node))){
                             AccessibilityNodeInfo click_find_node = NodeFunc.getClickableParentNode(node);
                             if (click_find_node != null) {
                                 if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                                    LogToFile.write("点击“朋友圈”按钮成功。");
-                                    Bottom_Menu_Name = "朋友圈";
+                                    LogToFile.write("点击“设置”按钮成功。");
+                                    Bottom_Menu_Name = "设置";
                                     FuncTools.delay(delay_after_click);
                                 } else {
-                                    LogToFile.write("点击“朋友圈”按钮失败。");
+                                    LogToFile.write("点击“设置”按钮失败。");
                                 }
                             }
                         }
@@ -175,21 +288,21 @@ public class AutomationService extends BaseAccessibilityService {
             }
             LogToFile.write(String.valueOf(line++));
             if(find_text_count >=4 ){
-                LogToFile.write("当前页面已设置在“发现”页面。find_text_count=" + String.valueOf(find_text_count));
+                LogToFile.write("当前页面已设置在“我”页面。find_text_count=" + String.valueOf(find_text_count));
             }
             else{
                 //“发现”菜单
-                AccessibilityNodeInfo find_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_BottomMenu_Btn_ID,NodeFunc.Wx_BottomMenu_Text[2],NodeFunc.Wx_BottomMenu_Btn_Class);
+                AccessibilityNodeInfo find_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_BottomMenu_Btn_ID,NodeFunc.Wx_BottomMenu_Text[3],NodeFunc.Wx_BottomMenu_Btn_Class);
                 AccessibilityNodeInfo click_find_node = null;
                 if(find_node != null) {
                     LogToFile.write(find_node.toString());
                     click_find_node = NodeFunc.getClickableParentNode(find_node);
                     if (click_find_node != null) {
                         if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                            LogToFile.write("点击“发现”按钮成功。");
+                            LogToFile.write("点击“我”按钮成功。");
                             FuncTools.delay(delay_after_click);
                         } else {
-                            LogToFile.write("点击“发现”按钮失败。");
+                            LogToFile.write("点击“我”按钮失败。");
                         }
                     } else {
                         this.performBackClick(200);
@@ -198,10 +311,64 @@ public class AutomationService extends BaseAccessibilityService {
             }
             LogToFile.write(String.valueOf(line++));
         }catch (Exception e){
-            LogToFile.write("goBottomFindMenu Fail!Error=" + e.getMessage());
-            LogToFile.toast("goBottomFindMenu Fail!Error=" + e.getMessage());
+            LogToFile.write("goSettingUI Fail!Error=" + e.getMessage());
+            LogToFile.toast("goSettingUI Fail!Error=" + e.getMessage());
         }finally {
-            LogToFile.write("设置到“发现”页面 运行结束,goBottomFindMenu run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+            LogToFile.write("设置到“设置”页面 运行结束,goSettingUI run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+        }
+    }
+
+    //region 设置到“朋友圈”页面 goMoments(AccessibilityEvent event)
+    //endregion
+    public void goMoments(AccessibilityEvent event){
+        LogToFile.write("设置到“朋友圈”页面开始运行,goMoments is running...");
+        int success_click_btn_count = 0;
+        int delay_after_click = 1000;//click后延迟 500 毫秒
+        int max_run_count = 10;
+        boolean isMoments = false;
+        int node_count = 0;
+        List<AccessibilityNodeInfo> node_list = new ArrayList<AccessibilityNodeInfo>();
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        int line = 0;
+        try{
+            for(int i=0;i<max_run_count;i++) {
+                node_count = NodeFunc.findNodebyClass_Desc(this.getRootInActiveWindow(), NodeFunc.Wx_MomentsUI_Class, NodeFunc.Wx_MomentsUI__Desc, node_list);
+                LogToFile.write("i=" + String.valueOf(i) + ",node_count=" + String.valueOf(node_count) + ",node_list.size()=" + String.valueOf(node_list.size()));
+                if (node_count == 0) {
+                    this.printNodeInfo(this.getRootInActiveWindow(), all_node_list, false);
+                    for (AccessibilityNodeInfo node : all_node_list) {
+                        if (node.getText() != null) {
+                            if ("朋友圈".equalsIgnoreCase(NodeFunc.getText(node))) {
+                                AccessibilityNodeInfo click_find_node = NodeFunc.getClickableParentNode(node);
+                                if (click_find_node != null) {
+                                    if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                                        LogToFile.write("点击“朋友圈”按钮成功。nodeinfo=" + node.toString());
+                                        FuncTools.delay(delay_after_click);
+                                        success_click_btn_count = 1;
+                                        break;
+                                    } else {
+                                        LogToFile.write("点击“朋友圈”按钮失败。nodeinfo=" + node.toString());
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                    if (success_click_btn_count == 0) {
+                        node_count = NodeFunc.findNodebyClass_Desc(this.getRootInActiveWindow(), NodeFunc.Wx_BackBtn_Class, NodeFunc.Wx_BackBtn__Desc, node_list);
+                        if (node_count > 0) {
+                            LogToFile.write("发现“返回”按钮，node_count=" + String.valueOf(node_count));
+                            this.performBackClick(delay_after_click);
+                        }
+                    }
+                }
+                else break;
+            }
+        }catch (Exception e){
+            LogToFile.write("goMoments Fail!Error=" + e.getMessage());
+            LogToFile.toast("goMoments Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("设置到“朋友圈”页面 运行结束,goMoments run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
         }
     }
     //region 处理自动回复消息
@@ -211,8 +378,8 @@ public class AutomationService extends BaseAccessibilityService {
         try {
             if (hasAction) {//有新消息进来，自动随机回复，仅回复群“内部管理群”的新信息
                 itemNodeinfo = null;
-                String className = event.getClassName().toString();
-                String contentDesc = event.getContentDescription().toString();
+                String className = event.getClassName() == null ? "" : event.getClassName().toString();
+                String contentDesc = event.getContentDescription() == null ? "" : event.getContentDescription().toString();
 
                 //LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
 
@@ -248,8 +415,12 @@ public class AutomationService extends BaseAccessibilityService {
                         }
                         //this.performHomeClick(200);
                     }
+                    hasAction = false;
                 }
-                hasAction = false;
+                else{
+                    LogToFile.write("微信窗口尚未激活，等待500毫秒。className=" + className);
+                    FuncTools.delay(100);
+                }
             }
         }
         catch (Exception e){
@@ -477,7 +648,7 @@ public class AutomationService extends BaseAccessibilityService {
                 DYHUI_dyhWord_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_DYHUI_dyhWord_ID,NodeFunc.Wx_DYHUI_dyhWord_Text,NodeFunc.Wx_DYHUI_dyhWord_Class);
                 //"订阅号界面  "返回"的参数
                 
-                DYHUI_back_node = NodeFunc.findNodebyID_Class_Desc(this.getRootInActiveWindow(),NodeFunc.Wx_DYHUI_back_ID,NodeFunc.Wx_DYHUI_back_Desc,NodeFunc.Wx_DYHUI_back_Class);
+                DYHUI_back_node = NodeFunc.findNodebyID_Class_Desc(this.getRootInActiveWindow(),NodeFunc.Wx_DYHUI_back_ID,NodeFunc.Wx_DYHUI_back_Class,NodeFunc.Wx_DYHUI_back_Desc);
                 // 特定公众号图文界面，特定“公众号”参数
                 
                 TuWenUI_GZH_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_TuWenUI_GZH_ID,this.MP_Account_Name,NodeFunc.Wx_TuWenUI_GZH_Class);
@@ -622,8 +793,12 @@ public class AutomationService extends BaseAccessibilityService {
                 }
             }
             if(Readed_Text_List.size() == tuwen_count && tuwen_count > 0 && success_click_btn_count == 0){
-                LogToFile.write("阅读公众号=" + this.MP_Account_Name + " 图文信息结束，共阅读 " + String.valueOf(tuwen_count) + " 条。");
-                LogToFile.toast("阅读公众号=" + this.MP_Account_Name + " 图文信息结束，共阅读 " + String.valueOf(tuwen_count) + " 条。");
+                String msg = "阅读公众号=" + this.MP_Account_Name + " 图文信息结束，共阅读 " + String.valueOf(tuwen_count) + " 条。";
+                LogToFile.write(msg);
+                LogToFile.toast(msg);
+                this.performBackClick(delay_after_back_click);
+                this.performBackClick(delay_after_back_click);
+                ChatWith("内部管理群",msg);//跳转到聊天界面发送信息
                 int i = 1;
                 for(AccessibilityNodeInfo node : Readed_Text_List){
                     LogToFile.write("标题" + String.valueOf(i++) + ":" + NodeFunc.getText(node));
@@ -642,6 +817,74 @@ public class AutomationService extends BaseAccessibilityService {
         }
         LogToFile.write("接到阅读公众号命令，阅读公众号文章 运行结束,dealReadMPArticle run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
     }
+    //region 跳转到聊天界面发送信息
+    //endregion
+    public void ChatWith(String Name,String msg){
+        LogToFile.write("跳转到 聊天 " + Name + " 页面开始运行,ChatWith is running...");
+        int success_click_btn_count = 0;
+        int delay_after_click = 1000;//click后延迟 1000 毫秒
+        int find_text_count = 0;
+        List<AccessibilityNodeInfo> chat_record_node_list = new ArrayList<AccessibilityNodeInfo>();
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+
+        try{
+            //this.printNodeInfo(chat_record_node_list);
+            int node_count = NodeFunc.findNodebyID_Class(this.getRootInActiveWindow(),NodeFunc.Wx_ChatRecord_Node_ID,NodeFunc.Wx_ChatRecord_Node_Class,chat_record_node_list);
+
+            if(node_count > 0){
+                for(AccessibilityNodeInfo node : chat_record_node_list){
+                    if(node.getText() != null) {
+                        if(Name.equalsIgnoreCase(NodeFunc.getText(node))){
+                            find_text_count++;
+                            AccessibilityNodeInfo click_find_node = NodeFunc.getClickableParentNode(node);
+                            if (click_find_node != null) {
+                                if (click_find_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                                    LogToFile.write("进入“" + Name + "” 聊天页面成功。");
+                                    FuncTools.delay(delay_after_click);
+                                    success_click_btn_count++;
+                                    this.printNodeInfo(this.getRootInActiveWindow(),all_node_list,false);
+                                } else {
+                                    LogToFile.write("进入“" + Name + "”聊天页面失败。");
+                                }
+                            }
+                        }
+                    }
+                }
+                if(success_click_btn_count == 1 && all_node_list.size() > 0){
+                    for(AccessibilityNodeInfo node : all_node_list){
+                        if(NodeFunc.Wx_Switch2KeyboardBtn_Desc.trim().equalsIgnoreCase(NodeFunc.getContentDescription(node)) && node.isClickable()) {
+                            node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            LogToFile.write("发现“切换到键盘”按钮。先切换到输入模式。nodeinfo=" + NodeFunc.getContentDescription(node));
+                            FuncTools.delay(delay_after_click);
+                            this.printNodeInfo(this.getRootInActiveWindow(),all_node_list,false);
+                            break;
+                        }
+                    }
+                    for(AccessibilityNodeInfo nodeInfo : all_node_list){
+                        if ("android.widget.EditText".equalsIgnoreCase(NodeFunc.getClassName(nodeInfo))) {
+                            nodeInfo.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+                            ClipData clip = ClipData.newPlainText("label", msg);
+                            ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                            clipboardManager.setPrimaryClip(clip);
+                            nodeInfo.performAction(AccessibilityNodeInfo.ACTION_PASTE);
+                            success_click_btn_count++;
+                        }
+                    }
+                }
+                if(success_click_btn_count == 2 && all_node_list.size() > 0){
+                    send();
+                }
+            }
+
+        }catch (Exception e){
+            LogToFile.write("ChatWith Fail!Error=" + e.getMessage());
+            LogToFile.toast("ChatWith Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("跳转到 聊天 " + Name + " 页面 运行结束,ChatWith run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+        }
+    }
+
+
     //region 返回到微信的主界面
     //endregion
     public boolean back2WeChatMain(AccessibilityNodeInfo node){
@@ -776,8 +1019,9 @@ public class AutomationService extends BaseAccessibilityService {
     /**
      * 寻找窗体中的“发送”按钮，并且点击。
      */
-    //endregion
+
     @SuppressLint("NewApi")
+    //endregion
     private void send() {
         AccessibilityNodeInfo nodeInfo = getRootInActiveWindow();
         if (nodeInfo != null) {

@@ -22,7 +22,7 @@ public class DateUtils {
      */
     public static String getCurrentTime(String format){
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
-        Date date = new Date();
+        java.util.Date date = new java.util.Date();//new java.util.Date();
         return sdf.format(date);
     }
 
@@ -46,7 +46,7 @@ public class DateUtils {
     public static Date getCurrentDate(String format){
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
         String dateS = getCurrentTime(format);
-        Date date = null;
+        java.util.Date date = null;
         try {
             date = sdf.parse(dateS);
         } catch (ParseException e) {
@@ -74,7 +74,7 @@ public class DateUtils {
      * @param format 默认格式为：yyyy-MM-dd HH:mm:ss
      * @return String
      */
-    public static String addYearToDate(int year,Date date,String format){
+    public static String addYearToDate(int year,java.util.Date date,String format){
         Calendar calender = getCalendar(date,format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -93,7 +93,7 @@ public class DateUtils {
      * @return String
      */
     public static String addYearToDate(int year,String date,String format){
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -110,7 +110,7 @@ public class DateUtils {
      * @param format 指定格式 为空默认 yyyy-mm-dd HH:mm:ss
      * @return String
      */
-    public static String addMothToDate(int month,Date date,String format) {
+    public static String addMothToDate(int month,java.util.Date date,String format) {
         Calendar calender = getCalendar(date,format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -129,7 +129,7 @@ public class DateUtils {
      * @return String
      */
     public static String addMothToDate(int month,String date,String format) {
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -146,7 +146,7 @@ public class DateUtils {
      * @param format 日期格式 为空默认 yyyy-mm-dd HH:mm:ss
      * @return String
      */
-    public static String addDayToDate(int day,Date date,String format) {
+    public static String addDayToDate(int day,java.util.Date date,String format) {
         Calendar calendar = getCalendar(date, format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -165,7 +165,7 @@ public class DateUtils {
      * @return String
      */
     public static String addDayToDate(int day,String date,String format) {
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -182,7 +182,7 @@ public class DateUtils {
      * @param format 日期格式 为空默认 yyyy-mm-dd HH:mm:ss
      * @return String
      */
-    public static String addHourToDate(int hour,Date date,String format) {
+    public static String addHourToDate(int hour,java.util.Date date,String format) {
         Calendar calendar = getCalendar(date, format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -201,7 +201,7 @@ public class DateUtils {
      * @return String
      */
     public static String addHourToDate(int hour,String date,String format) {
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -218,7 +218,7 @@ public class DateUtils {
      * @param format 日期格式 为空默认 yyyy-mm-dd HH:mm:ss
      * @return String
      */
-    public static String addMinuteToDate(int minute,Date date,String format) {
+    public static String addMinuteToDate(int minute,java.util.Date date,String format) {
         Calendar calendar = getCalendar(date, format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -237,7 +237,7 @@ public class DateUtils {
      * @return String
      */
     public static String addMinuteToDate(int minute,String date,String format){
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -254,7 +254,7 @@ public class DateUtils {
      * @param format 日期格式 为空默认 yyyy-mm-dd HH:mm:ss
      * @return String
      */
-    public static String addSecondToDate(int second,Date date,String format){
+    public static String addSecondToDate(int second,java.util.Date date,String format){
         Calendar calendar = getCalendar(date, format);
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
 
@@ -274,7 +274,7 @@ public class DateUtils {
      * @throws Exception
      */
     public static String addSecondToDate(int second,String date,String format){
-        Date newDate = new Date();
+        java.util.Date newDate = new java.util.Date();
         if(null != date && !"".equals(date)){
             newDate = string2Date(date, format);
         }
@@ -290,7 +290,7 @@ public class DateUtils {
      * @param format 格式
      * @return Calendar
      */
-    public static Calendar getCalendar(Date date,String format){
+    public static Calendar getCalendar(java.util.Date date,String format){
         if(date == null){
             date = getCurrentDate(format);
         }
@@ -316,7 +316,7 @@ public class DateUtils {
         }
 
         SimpleDateFormat sdf = DateFormatUtils.getFormat(DateFormatUtils.DATE_FORMAT2);
-        Date date = null;
+        java.util.Date date = null;
 
         try {
             value = DateFormatUtils.formatDate(value, DateFormatUtils.DATE_FORMAT2);
@@ -341,7 +341,7 @@ public class DateUtils {
         }
 
         SimpleDateFormat sdf = DateFormatUtils.getFormat(format);
-        Date date = null;
+        java.util.Date date = null;
 
         try {
             value = DateFormatUtils.formatDate(value, format);
@@ -395,7 +395,7 @@ public class DateUtils {
      * @param value 日期
      * @return int
      */
-    public static int getCurrentYear(Date value){
+    public static int getCurrentYear(java.util.Date value){
         String date = date2String(value, DateFormatUtils.DATE_YEAR);
         return Integer.valueOf(date);
     }
@@ -408,7 +408,7 @@ public class DateUtils {
      * @return int
      */
     public static int getCurrentYear(String value) {
-        Date date = string2Date(value, DateFormatUtils.DATE_YEAR);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_YEAR);
         Calendar calendar = getCalendar(date, DateFormatUtils.DATE_YEAR);
         return calendar.get(Calendar.YEAR);
     }
@@ -420,7 +420,7 @@ public class DateUtils {
      * @param value 日期
      * @return int
      */
-    public static int getCurrentMonth(Date value){
+    public static int getCurrentMonth(java.util.Date value){
         String date = date2String(value, DateFormatUtils.DATE_MONTH);
         return Integer.valueOf(date);
     }
@@ -433,7 +433,7 @@ public class DateUtils {
      * @return int
      */
     public static int getCurrentMonth(String value) {
-        Date date = string2Date(value, DateFormatUtils.DATE_MONTH);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_MONTH);
         Calendar calendar = getCalendar(date, DateFormatUtils.DATE_MONTH);
 
         return calendar.get(Calendar.MONTH);
@@ -446,7 +446,7 @@ public class DateUtils {
      * @param value 日期
      * @return int
      */
-    public static int getCurrentDay(Date value){
+    public static int getCurrentDay(java.util.Date value){
         String date = date2String(value, DateFormatUtils.DATE_DAY);
         return Integer.valueOf(date);
     }
@@ -459,7 +459,7 @@ public class DateUtils {
      * @return int
      */
     public static int getCurrentDay(String value){
-        Date date = string2Date(value, DateFormatUtils.DATE_DAY);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_DAY);
         Calendar calendar = getCalendar(date, DateFormatUtils.DATE_DAY);
 
         return calendar.get(Calendar.DATE);
@@ -472,7 +472,7 @@ public class DateUtils {
      * @param value 日期
      * @return String
      */
-    public static String getCurrentWeek(Date value) {
+    public static String getCurrentWeek(java.util.Date value) {
         Calendar calendar = getCalendar(value, DateFormatUtils.DATE_FORMAT1);
         int weekIndex = calendar.get(Calendar.DAY_OF_WEEK) - 1 < 0 ? 0 : calendar.get(Calendar.DAY_OF_WEEK) - 1;
 
@@ -487,7 +487,7 @@ public class DateUtils {
      * @return String
      */
     public static String getCurrentWeek(String value) {
-        Date date = string2Date(value, DateFormatUtils.DATE_FORMAT1);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_FORMAT1);
         return getCurrentWeek(date);
     }
 
@@ -498,7 +498,7 @@ public class DateUtils {
      * @param value 日期
      * @return int
      */
-    public static int getCurrentHour(Date value){
+    public static int getCurrentHour(java.util.Date value){
         String date = date2String(value, DateFormatUtils.DATE_HOUR);
         return Integer.valueOf(date);
     }
@@ -512,7 +512,7 @@ public class DateUtils {
      * @return int
      */
     public static int getCurrentHour(String value) {
-        Date date = string2Date(value, DateFormatUtils.DATE_HOUR);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_HOUR);
         Calendar calendar = getCalendar(date, DateFormatUtils.DATE_HOUR);
 
         return calendar.get(Calendar.DATE);
@@ -525,7 +525,7 @@ public class DateUtils {
      * @param value 日期
      * @return int
      */
-    public static int getCurrentMinute(Date value){
+    public static int getCurrentMinute(java.util.Date value){
         String date = date2String(value, DateFormatUtils.DATE_MINUTE);
         return Integer.valueOf(date);
     }
@@ -538,7 +538,7 @@ public class DateUtils {
      * @return int
      */
     public static int getCurrentMinute(String value){
-        Date date = string2Date(value, DateFormatUtils.DATE_MINUTE);
+        java.util.Date date = string2Date(value, DateFormatUtils.DATE_MINUTE);
         Calendar calendar = getCalendar(date, DateFormatUtils.DATE_MINUTE);
 
         return calendar.get(Calendar.MINUTE);
@@ -612,12 +612,14 @@ public class DateUtils {
             endTime = getCurrentTime();
         }
 
-        SimpleDateFormat sdf = DateFormatUtils.getFormat("");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         int value = 0;
         try {
-            Date begin = sdf.parse(startTime);
-            Date end = sdf.parse(endTime);
+            java.util.Date begin = sdf.parse(startTime);
+            java.util.Date end = sdf.parse(endTime);
+
             long between = (end.getTime() - begin.getTime()) / 1000;  //除以1000转换成豪秒
+
             if(type == 1){   //小时
                 value = (int) (between % (24 * 36000) / 3600);
             }
@@ -625,8 +627,9 @@ public class DateUtils {
                 value = (int) (between % 3600 / 60);
             }
             else if(type == 3){
-                value = (int) (between % 60 / 60);
+                value = (int) (between % 60 );
             }
+            //LogToFile.write("begin=" + begin.toString() + ",end=" + end.toString() + ",between=" + String.valueOf(between) + ",value=" + String.valueOf(value));
         } catch (ParseException e) {
             e.printStackTrace();
         }
@@ -688,7 +691,7 @@ public class DateUtils {
      * @return
      */
     public static String getMonthLastDate(String date) {
-        Date strDate = DateUtils.string2Date(getMonthFirstDate(date));
+        java.util.Date strDate = DateUtils.string2Date(getMonthFirstDate(date));
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(strDate);
         calendar.add(Calendar.MONTH, 1);
@@ -706,7 +709,7 @@ public class DateUtils {
      * @return
      */
     @SuppressWarnings("static-access")
-    public static Date getWeekFirstDate(Date date) {
+    public static Date getWeekFirstDate(java.util.Date date) {
         Calendar now = Calendar.getInstance();
         now.setTime(date);
         int today = now.get(Calendar.DAY_OF_WEEK);
@@ -725,7 +728,7 @@ public class DateUtils {
      * @return
      */
     @SuppressWarnings("static-access")
-    public static Date geWeektLastDate(Date date) {
+    public static java.util.Date geWeektLastDate(java.util.Date date) {
         Calendar now = Calendar.getInstance();
         now.setTime(date);
         int today = now.get(Calendar.DAY_OF_WEEK);

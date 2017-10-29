@@ -112,12 +112,94 @@ public class NodeFunc {
     public static List<String> Wx_FindUI_Node_Text = new ArrayList<>(Arrays.asList("朋友圈","扫一扫","购物","游戏","小程序","摇一摇","看一看","搜一搜","附近的人"));
     //-----------------------“发现”页面标识结束--------------------------------------
 
+    //-----------------------“我”页面标识开始--------------------------------------
+    //“我”页面，标识参数
+    public static String Wx_WoUI_Node_ID = "android:id/title";
+    public static String Wx_WoUI_Node_Class = "android.widget.TextView";
+    public static List<String> Wx_WoUI_Node_Text = new ArrayList<>(Arrays.asList("钱包","收藏","相册","表情","设置"));
+    //-----------------------“我”页面标识结束--------------------------------------
 
-    /**
-     * 根据text、ClassName获取NodeList,返回node数量
-     */
-    public static int findNodebyText_Class(AccessibilityNodeInfo root_node , String text, String ClassName,List<AccessibilityNodeInfo> ret_nodeList)
-    {
+    //-----------------------“微信”页面 聊天记录 标识开始--------------------------------------
+    public static String Wx_ChatRecord_Node_ID = "com.tencent.mm:id/ak1";
+    public static String Wx_ChatRecord_Node_Class = "android.view.View";
+    //-----------------------“微信”页面 聊天记录 标识结束--------------------------------------
+
+    //-----------------------“朋友圈”页面 标识开始--------------------------------------
+    public static String Wx_MomentsUI__Desc = "当前所在页面,朋友圈";
+    public static String Wx_MomentsUI_Class = "android.widget.FrameLayout";
+    //-----------------------“朋友圈”页面 标识结束--------------------------------------
+
+    //-----------------------“返回” 标识开始--------------------------------------
+    public static String Wx_BackBtn__Desc = "返回";
+    public static String Wx_BackBtn_Class = "android.widget.ImageView";
+    //-----------------------“返回” 标识结束--------------------------------------
+
+    //region 获取node的 属性 字符串 ，以防null错误；
+    //endregion
+    private String getNodeAttrString(AccessibilityNodeInfo node,String Attr){
+        String ret_str = "";
+        try {
+            if (Attr.equalsIgnoreCase("text"))
+                ret_str = node.getText() == null ? "" : node.getText().toString().trim();
+            else if (Attr.equalsIgnoreCase("ClassName"))
+                ret_str = node.getClassName() == null ? "" : node.getClassName().toString().trim();
+            else if (Attr.equalsIgnoreCase("PackageName"))
+                ret_str = node.getPackageName() == null ? "" : node.getPackageName().toString().trim();
+            else if (Attr.equalsIgnoreCase("Desc"))
+                ret_str = node.getContentDescription() == null ? "" : node.getContentDescription().toString().trim();
+            else if (Attr.equalsIgnoreCase("ID"))
+                ret_str = node.getViewIdResourceName() == null ? "" : node.getViewIdResourceName().toString().trim();
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
+    }
+    //region 获取node的所有子节点；
+    //endregion
+    public static void getAllNodeInfo(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList) {
+        if(info != null) {
+            nodeList.add(info);
+            if (info.getChildCount() == 0) {
+
+            } else {
+                for (int i = 0; i < info.getChildCount(); i++) {
+                    if (info.getChild(i) != null) {
+                        getAllNodeInfo(info.getChild(i), nodeList);
+                    }
+                }
+            }
+        }
+    }
+    //region 根据text、ClassName、ContentDesc 获取NodeList,返回node数量
+    //endregion
+    public static int findNodebyClass_Desc(AccessibilityNodeInfo root_node , String ClassName, String ContentDesc,List<AccessibilityNodeInfo> ret_nodeList){
+        AccessibilityNodeInfo node = null;
+        ret_nodeList.clear();
+        int node_count = 0;
+        if(root_node != null){
+            List<AccessibilityNodeInfo> nodeInfoList = new ArrayList<AccessibilityNodeInfo>();
+            getAllNodeInfo(root_node,nodeInfoList);
+            int i = 0 ;
+            for(AccessibilityNodeInfo sub_node : nodeInfoList)
+            {
+                //LogToFile.write(sub_node.toString());
+                String class_name = getClassName(sub_node);
+                if(ClassName.trim().equalsIgnoreCase(class_name) && getContentDescription(sub_node).equalsIgnoreCase(ContentDesc) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName) ){
+                    node  = sub_node;
+                    //LogToFile.write("根据 ContentDesc =" + ContentDesc + ",NodeClass=" + ClassName + " 发现节点！");
+                    ret_nodeList.add(node);
+                    node_count++;
+                }
+            }
+
+        }
+        return node_count;
+    }
+
+    //region 根据text、ClassName获取NodeList,返回node数量
+    //endregion
+    public static int findNodebyText_Class(AccessibilityNodeInfo root_node , String text, String ClassName,List<AccessibilityNodeInfo> ret_nodeList){
         AccessibilityNodeInfo node = null;
         ret_nodeList.clear();
         int node_count = 0;
@@ -132,8 +214,8 @@ public class NodeFunc {
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
                     //LogToFile.write(sub_node.toString());
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName) && sub_node.getText().toString().trim().equalsIgnoreCase(text)){
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName) && getText(sub_node).equalsIgnoreCase(text)){
                         node  = sub_node;
                         //LogToFile.write("根据Text=" + text + ",NodeClass=" + ClassName + " 发现节点！");
                         ret_nodeList.add(node);
@@ -145,11 +227,10 @@ public class NodeFunc {
         }
         return node_count;
     }
-    /**
-     * 根据ID、ClassName获取Node
-     */
-    public static AccessibilityNodeInfo findNodebyID_Class(AccessibilityNodeInfo root_node , String resource_id, String ClassName)
-    {
+
+    //region 根据ID、ClassName获取Node
+    //endregion
+    public static AccessibilityNodeInfo findNodebyID_Class(AccessibilityNodeInfo root_node , String resource_id, String ClassName){
         AccessibilityNodeInfo node = null;
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
@@ -161,8 +242,8 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         LogToFile.write("根据ID=" + resource_id + ",NodeText=" + ClassName + " 发现节点！");
                         break;
@@ -173,11 +254,10 @@ public class NodeFunc {
         }
         return node;
     }
-    /**
-     * 根据ID、ClassName获取NodeList
-     */
-    public static int findNodebyID_Class(AccessibilityNodeInfo root_node , String resource_id, String ClassName,List<AccessibilityNodeInfo> ret_nodeList)
-    {
+
+    //region 根据ID、ClassName获取NodeList
+    //endregion
+    public static int findNodebyID_Class(AccessibilityNodeInfo root_node , String resource_id, String ClassName,List<AccessibilityNodeInfo> ret_nodeList){
         AccessibilityNodeInfo node = null;
         int count = 0;
         ret_nodeList.clear();
@@ -191,8 +271,8 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + " 发现节点！");
                         ret_nodeList.add(node);
@@ -204,11 +284,10 @@ public class NodeFunc {
         }
         return count;
     }
-    /**
-     * 根据ID、Text获取Node
-     */
-    public static AccessibilityNodeInfo findNodebyID_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText)
-    {
+
+    //region 根据ID、Text获取Node
+    //endregion
+    public static AccessibilityNodeInfo findNodebyID_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText){
         AccessibilityNodeInfo node = null;
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
@@ -220,8 +299,8 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String nodetext = sub_node.getText().toString().trim();
-                    if(NodeText.trim().equalsIgnoreCase(nodetext) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String nodetext = getText(sub_node);
+                    if(NodeText.trim().equalsIgnoreCase(nodetext) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         //LogToFile.write("根据ID=" + resource_id + ",NodeText=" + NodeText + " 发现节点！");
                         break;
@@ -232,11 +311,10 @@ public class NodeFunc {
         }
         return node;
     }
-    /**
-     * 根据ID、Desc、ClassName获取Node
-     */
-    public static AccessibilityNodeInfo findNodebyID_Class_Desc(AccessibilityNodeInfo root_node , String resource_id, String NodeDesc, String ClassName)
-    {
+
+    //region 根据ID、Desc、ClassName获取Node
+    //endregion
+    public static AccessibilityNodeInfo findNodebyID_Class_Desc(AccessibilityNodeInfo root_node , String resource_id, String ClassName, String NodeDesc){
         AccessibilityNodeInfo node = null;
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
@@ -248,9 +326,9 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String nodedesc = sub_node.getContentDescription().toString().trim();
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeDesc.trim().equalsIgnoreCase(nodedesc) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String nodedesc = getContentDescription(sub_node);
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeDesc.trim().equalsIgnoreCase(nodedesc) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + ",NodeText=" + NodeText + " 发现节点！");
                         break;
@@ -261,11 +339,10 @@ public class NodeFunc {
         }
         return node;
     }
-    /**
-     * 根据ID、Text、ClassName获取Node
-     */
-    public static AccessibilityNodeInfo findNodebyID_Class_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText, String ClassName)
-    {
+
+    //region 根据ID、Text、ClassName获取Node
+    //endregion
+    public static AccessibilityNodeInfo findNodebyID_Class_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText, String ClassName){
         AccessibilityNodeInfo node = null;
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
@@ -277,9 +354,9 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String nodetext = sub_node.getText().toString().trim();
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeText.trim().equalsIgnoreCase(nodetext) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String nodetext = getText(sub_node);
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeText.trim().equalsIgnoreCase(nodetext) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + ",NodeText=" + NodeText + " 发现节点！");
                         break;
@@ -290,11 +367,10 @@ public class NodeFunc {
         }
         return node;
     }
-    /**
-     * 根据ID、Text、ClassName获取 NodeCount
-     */
-    public static int findNodebyID_Class_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText, String ClassName,List<AccessibilityNodeInfo> ret_nodeList)
-    {
+
+    //region 根据ID、Text、ClassName获取 NodeCount
+    //endregion
+    public static int findNodebyID_Class_Text(AccessibilityNodeInfo root_node , String resource_id, String NodeText, String ClassName,List<AccessibilityNodeInfo> ret_nodeList){
         AccessibilityNodeInfo node = null;
         int NodeCount = 0;
         ret_nodeList.clear();
@@ -308,9 +384,9 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String nodetext = sub_node.getText().toString().trim();
-                    String class_name = sub_node.getClassName().toString().trim();
-                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeText.trim().equalsIgnoreCase(nodetext) && sub_node.getPackageName().toString().trim().equalsIgnoreCase(Wx_PackageName)){
+                    String nodetext = getText(sub_node);
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && NodeText.trim().equalsIgnoreCase(nodetext) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
                         ret_nodeList.add(node);
                         //LogToFile.write("根据ID=" + resource_id + ",ClassName=" + ClassName + ",NodeText=" + NodeText + " 发现节点！");
@@ -323,11 +399,9 @@ public class NodeFunc {
         return NodeCount;
     }
 
-    /**
-     *获取可点击的父节点，并根据参数进行点击
-     */
-    public static AccessibilityNodeInfo clickParentNode(AccessibilityNodeInfo node , String resource_id, String NodeText , boolean isClick)
-    {
+    //region 获取可点击的父节点，并根据参数进行点击
+    //endregion
+    public static AccessibilityNodeInfo clickParentNode(AccessibilityNodeInfo node , String resource_id, String NodeText , boolean isClick){
         AccessibilityNodeInfo parent = null;
         if(node == null){
             parent = null;
@@ -343,7 +417,7 @@ public class NodeFunc {
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
-                    String nodetext = sub_node.getText().toString().trim();
+                    String nodetext = getText(sub_node);
                     if(NodeText.trim().equalsIgnoreCase(nodetext)){
                         parent = sub_node.getParent();
                         while(parent != null)
@@ -365,11 +439,10 @@ public class NodeFunc {
         }
         return parent;
     }
-    /**
-     *获取可点击的父节点
-     */
-    public static AccessibilityNodeInfo getClickableParentNode(AccessibilityNodeInfo node)
-    {
+
+    //region 获取可点击的父节点
+    //endregion
+    public static AccessibilityNodeInfo getClickableParentNode(AccessibilityNodeInfo node){
         AccessibilityNodeInfo parent = null;
         if(node == null){
             parent = null;
@@ -386,9 +459,9 @@ public class NodeFunc {
         }
         return parent;
     }
-    /**
-     *  获取node的 ContentDescription ，以防null错误；
-     */
+
+    //region 获取node的 ContentDescription ，以防null错误；
+    //endregion
     public static String getContentDescription(AccessibilityNodeInfo node){
         String ret_str = "";
         try {
@@ -401,9 +474,9 @@ public class NodeFunc {
             return ret_str;
         }
     }
-    /**
-     *  获取node的 ClassName ，以防null错误；
-     */
+
+    //region 获取node的 ClassName ，以防null错误；
+    //endregion
     public static String getClassName(AccessibilityNodeInfo node){
         String ret_str = "";
         try {
@@ -416,14 +489,44 @@ public class NodeFunc {
             return ret_str;
         }
     }
-    /**
-     *  获取node的Text ，以防null错误；
-     */
+
+    //region 获取node的Text ，以防null错误；
+    //endregion
     public static String getText(AccessibilityNodeInfo node){
         String ret_str = "";
         try {
             if (node != null) {
                 ret_str = node.getText() == null ? "" : node.getText().toString().trim();
+            }
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
+    }
+
+    //region 获取node的PackageName ，以防null错误；
+    //endregion
+    public static String getPackageName(AccessibilityNodeInfo node){
+        String ret_str = "";
+        try {
+            if (node != null) {
+                ret_str = node.getPackageName() == null ? "" : node.getPackageName().toString().trim();
+            }
+        }catch (Exception e){
+            LogToFile.write("run Fail!Error=" + e.getMessage());
+        }finally {
+            return ret_str;
+        }
+    }
+
+    //region 获取node的 ID  ，以防null错误；
+    //endregion
+    public static String getViewIdResourceName(AccessibilityNodeInfo node){
+        String ret_str = "";
+        try {
+            if (node != null) {
+                ret_str = node.getViewIdResourceName() == null ? "" : node.getViewIdResourceName().toString().trim();
             }
         }catch (Exception e){
             LogToFile.write("run Fail!Error=" + e.getMessage());
