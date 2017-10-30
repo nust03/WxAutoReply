@@ -14,6 +14,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import java.util.ArrayList;
 import java.util.List;
 /**
  * Created by myxiang on 2017/10/6.
@@ -132,7 +133,24 @@ public class BaseAccessibilityService extends AccessibilityService {
             LogToFile.write("noteInfo is　null");
 
         } else {
-            recycle(rowNode,nodeList,true);
+            nodeList.clear();
+            recycle(rowNode,nodeList,true,0);
+        }
+        LogToFile.write("==============================================结束打印");
+    }
+    /**
+     * 遍历所有节点并打印
+     */
+    public void printNodeInfo(AccessibilityNodeInfo Node) {
+        AccessibilityNodeInfo rowNode = Node;
+        List<AccessibilityNodeInfo> nodeList = new ArrayList<AccessibilityNodeInfo>();
+        LogToFile.write("==============================================开始打印");
+        if (rowNode == null) {
+            LogToFile.write("noteInfo is　null");
+
+        } else {
+            nodeList.clear();
+            recycle(rowNode,nodeList,true,0);
         }
         LogToFile.write("==============================================结束打印");
     }
@@ -145,7 +163,8 @@ public class BaseAccessibilityService extends AccessibilityService {
             LogToFile.write("noteInfo is　null");
 
         } else {
-            recycle(rowNode,nodeList,true);
+            nodeList.clear();
+            recycle(rowNode,nodeList,true,0);
         }
         LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
     }
@@ -159,20 +178,20 @@ public class BaseAccessibilityService extends AccessibilityService {
 
         } else {
             nodeList.clear();
-            recycle(rowNode,nodeList,isPrint);
+            recycle(rowNode,nodeList,isPrint,0);
         }
         LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
     }
 
-    public void recycle(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList,boolean isPrint) {
-        if(isPrint) LogToFile.write("node ChildCount=" + String.valueOf(info.getChildCount()) + ";info:" + info.toString());
+    public void recycle(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList,boolean isPrint,int level) {
+        if(isPrint && (info.getText() != null || info.getContentDescription() != null)) LogToFile.write("Level: " + String.valueOf(level) + " ,node isVisibleToUser=" + String.valueOf(info.isVisibleToUser()) + ";info:" + info.toString());
         nodeList.add(info);
         if (info.getChildCount() == 0) {
 
         } else {
             for (int i = 0; i < info.getChildCount(); i++) {
                 if (info.getChild(i) != null) {
-                    recycle(info.getChild(i),nodeList,isPrint);
+                    recycle(info.getChild(i),nodeList,isPrint,level++);
                 }
             }
         }

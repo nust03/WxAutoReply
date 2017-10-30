@@ -8,6 +8,7 @@ import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
@@ -15,12 +16,18 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Toast;
+
+import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
+import static java.lang.Thread.sleep;
 
 
 public class AutomationService extends BaseAccessibilityService {
@@ -37,6 +44,7 @@ public class AutomationService extends BaseAccessibilityService {
     private boolean locked = false;
     private boolean background = false;
     private String  stay_input_time = "";//在输入界面停留的循环次数
+    String runcontent = "";//上下文
     private String sname;
     private String scontent;
     AccessibilityNodeInfo itemNodeinfo;
@@ -120,7 +128,7 @@ public class AutomationService extends BaseAccessibilityService {
                         dealAutoReplay(event);//处理自动回复消息
                         default_run_count++;
                     }
-                    if(hasFriendRequest && hasFriendRequestCount > 0 && default_run_count == 0){
+                    if(hasFriendRequest  && default_run_count == 0){
                         dealNewfriendRequest(event);//处理好友请求
                         default_run_count++;
                     }
@@ -131,24 +139,28 @@ public class AutomationService extends BaseAccessibilityService {
                     if(hasAction == false && hasFriendRequest == false && hasReadMPAticle == false  && default_run_count == 0){
                         Bottom_Menu_Name = "";
                         switch2Keyboard(event);//判断是否有“切换到键盘”按钮，如有切换到输入界面
-                        List<AccessibilityNodeInfo> node_list = new ArrayList<AccessibilityNodeInfo>();
-                        int node_count = NodeFunc.findNodebyClass_Desc(this.getRootInActiveWindow(),NodeFunc.Wx_Switch2TalkBtn_Class,NodeFunc.Wx_Switch2TalkBtn_Desc,node_list);
-                        if(node_count > 0 ) {//通过判断当前页面是否有输入按钮，来判断是否在聊天界面
+                        {//无任务，设置朋友圈
+                            /*
                             String current_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
                             if(stay_input_time.isEmpty()) stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
                             int second = DateUtils.compareTime(stay_input_time,current_time,3);
-                            if(second >= 1) goMoments(event);//设置到“朋友圈”页面
+                            if(second >= 10) goMoments(event);//设置到“朋友圈”页面
                             LogToFile.write("停留在输入界面时长，stay_input_time=" + stay_input_time + ",current_time=" + current_time + ",时长=" + String.valueOf(second));
+                            */
+                            //getBottomMenuBtn(NodeFunc.Wx_BottomMenu_Text[1]);
+                            AccessibilityNodeInfo root_node = this.getRootInActiveWindow();
+                            AccessibilityNodeInfo linear_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+                            List<AccessibilityNodeInfo> nodelist = new ArrayList<AccessibilityNodeInfo>();
+                            if(linear_node != null){
+                                LogToFile.write("Title=" + NodeFunc.getContentDescription(root_node));
+                                //this.printNodeInfo(linear_node,nodelist);
+                            }
                         }
-                        else{
-                            stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
-                            LogToFile.write("未发现输入按钮，初始化时间stay_input_time=" + stay_input_time);
+                    }
+                    else{
+                        stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
+                        LogToFile.write("初始化时间stay_input_time=" + stay_input_time);
 
-                        }
-                        //goSettingUI(event);//设置到“设置”页面
-                        //goDYHUI(event);//设置到“订阅号”页面
-
-                        //default_run_count++;
                     }
             }
         }
@@ -324,7 +336,7 @@ public class AutomationService extends BaseAccessibilityService {
         LogToFile.write("设置到“朋友圈”页面开始运行,goMoments is running...");
         int success_click_btn_count = 0;
         int delay_after_click = 1000;//click后延迟 500 毫秒
-        int max_run_count = 10;
+        int max_run_count = 3;
         boolean isMoments = false;
         int node_count = 0;
         List<AccessibilityNodeInfo> node_list = new ArrayList<AccessibilityNodeInfo>();
@@ -335,7 +347,7 @@ public class AutomationService extends BaseAccessibilityService {
                 node_count = NodeFunc.findNodebyClass_Desc(this.getRootInActiveWindow(), NodeFunc.Wx_MomentsUI_Class, NodeFunc.Wx_MomentsUI__Desc, node_list);
                 LogToFile.write("i=" + String.valueOf(i) + ",node_count=" + String.valueOf(node_count) + ",node_list.size()=" + String.valueOf(node_list.size()));
                 if (node_count == 0) {
-                    this.printNodeInfo(this.getRootInActiveWindow(), all_node_list, false);
+                    this.printNodeInfo(this.getRootInActiveWindow(), all_node_list, true);
                     for (AccessibilityNodeInfo node : all_node_list) {
                         if (node.getText() != null) {
                             if ("朋友圈".equalsIgnoreCase(NodeFunc.getText(node))) {
@@ -447,15 +459,10 @@ public class AutomationService extends BaseAccessibilityService {
             if (!texts.isEmpty()) {
                 for (CharSequence text : texts) {
                     String content = text.toString();
-                    LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:content:" + content);
+                    LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:content:" + content + ",pri=" + String.valueOf(pri));
                     if (!TextUtils.isEmpty(content) ) {//&& (content.indexOf("史言兵") == 0 || content.indexOf("优惠券搬运工") == 0)
                         background = true;
                         notifyWechat(event);
-                        if (pri == Notification.PRIORITY_HIGH || pri == Notification.PRIORITY_DEFAULT)
-                            hasAction = true;//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
-                        else if (pri == Notification.PRIORITY_MAX) {
-                            hasFriendRequest = true;
-                        }//加好友信息 PRIORITY_MAX = 2
                         LogToFile.write("TYPE_NOTIFICATION_STATE_CHANGED:sname=" + sname + ",scontent=" + scontent);
                     }
                 }
@@ -472,98 +479,218 @@ public class AutomationService extends BaseAccessibilityService {
     public void dealNewfriendRequest(AccessibilityEvent event){
         LogToFile.write("处理好友请求开始运行,dealNewfriendRequest is running...");
         int success_click_btn_count = 0;
+        int delay_after_click = 200;//click后延迟200毫秒
+        int node_count = 0;
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo backbtn_node = null;
+        AccessibilityNodeInfo address_node = null;//“通讯录”node
+        AccessibilityNodeInfo newFriend_node = null;//“新的朋友”node
+        AccessibilityNodeInfo recvBtn_node = null;//“接受”node
+        AccessibilityNodeInfo finishBtn_node = null;//“完成”node
+        AccessibilityNodeInfo SendMsgBtn_node = null;//“发消息”node
+        AccessibilityNodeInfo waiting_node = null;//“请稍候...”node
+        AccessibilityNodeInfo dealing_node = null;//“正在处理...”node
+        List<String> ui_Title_List = new ArrayList<>(Arrays.asList("当前所在页面,新的朋友","当前所在页面,朋友验证","当前所在页面,详细资料"));
+        String run_msg = "";
+        String ui_title = "";
+        //List<String> conten_list = new ArrayList<>(Arrays.asList("获取通讯录按钮并点击","获取新的朋友按钮并点击","获取接受按钮并点击","获取完成按钮并点击"));
+        //根据上下文进行运行，1、获取通讯录按钮；2、
         try{
-            List<AccessibilityNodeInfo> tmp_node_list = new ArrayList<AccessibilityNodeInfo>();
-            AccessibilityNodeInfo address_list_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_BottomMenu_Btn_ID,NodeFunc.Wx_BottomMenu_Text[1],NodeFunc.Wx_BottomMenu_Btn_Class);
-            int new_friend_node_count = NodeFunc.findNodebyText_Class(this.getRootInActiveWindow(),NodeFunc.Wx_NewFriend_Text,NodeFunc.Wx_NewFriend_Class,tmp_node_list);
-            AccessibilityNodeInfo recv_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_NewFriend_RecvBtn_ID,NodeFunc.Wx_NewFriend_RecvBtn_Text,NodeFunc.Wx_NewFriend_RecvBtn_Class);
-            AccessibilityNodeInfo finish_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_NewFriend_FinishBtn_ID,NodeFunc.Wx_NewFriend_FinishBtn_Text,NodeFunc.Wx_NewFriend_FinishBtn_Class);
-            AccessibilityNodeInfo send_msg_node = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_NewFriend_SendMsgBtn_ID,NodeFunc.Wx_NewFriend_SendMsgBtn_Text,NodeFunc.Wx_NewFriend_SendMsgBtn_Class);
-            int delay_after_click = 200;//click后延迟200毫秒
-
-            if (hasFriendRequest && hasFriendRequestCount == 0 && success_click_btn_count == 0) {
-                //printNodeInfo();
-                tmp_node_list.clear();
-                hasFriendRequestCount = NodeFunc.findNodebyID_Class_Text(this.getRootInActiveWindow(),NodeFunc.Wx_NewFriend_RecvBtn_ID,NodeFunc.Wx_NewFriend_RecvBtn_Text,NodeFunc.Wx_NewFriend_RecvBtn_Class,tmp_node_list);
+            AccessibilityNodeInfo root_node = this.getRootInActiveWindow();
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+            address_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_BottomMenu_Btn_ID,NodeFunc.Wx_BottomMenu_Text[1],NodeFunc.Wx_BottomMenu_Btn_Class);//“通讯录”node
+            newFriend_node = NodeFunc.findNodebyText_Class(linearLayout_node,NodeFunc.Wx_NewFriend_Text,NodeFunc.Wx_NewFriend_Class);//“新的朋友”node
+            recvBtn_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_NewFriend_RecvBtn_ID,NodeFunc.Wx_NewFriend_RecvBtn_Text,NodeFunc.Wx_NewFriend_RecvBtn_Class);//“接受”node
+            finishBtn_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_NewFriend_FinishBtn_ID,NodeFunc.Wx_NewFriend_FinishBtn_Text,NodeFunc.Wx_NewFriend_FinishBtn_Class);//“完成”node
+            SendMsgBtn_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_NewFriend_SendMsgBtn_ID,NodeFunc.Wx_NewFriend_SendMsgBtn_Text,NodeFunc.Wx_NewFriend_SendMsgBtn_Class);//“发消息”node
+            backbtn_node = NodeFunc.findNodebyClass_Desc(linearLayout_node,NodeFunc.Wx_BackBtn_Class,NodeFunc.Wx_BackBtn__Desc);
+            dealing_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_DealingUI_ID,NodeFunc.Wx_DealingUI_Text,NodeFunc.Wx_DealingUI_Class);//“正在处理...”node
+            waiting_node = NodeFunc.findNodebyText_Class(linearLayout_node,NodeFunc.Wx_DealingUI_Text,NodeFunc.Wx_DealingUI_Class);//“请稍候...”node
+            ui_title = NodeFunc.getContentDescription(root_node);
+            if(ui_title.isEmpty() && success_click_btn_count == 0){
+                //当前所在页面标题为“空”判断是等待窗口，等待200毫秒
+                FuncTools.delay(delay_after_click);
                 success_click_btn_count++;
+                this.printNodeInfo(linearLayout_node);
+                run_msg = "当前所在页面标题为“空”判断是等待窗口，等待200毫秒";
             }
-            if(address_list_node != null && success_click_btn_count == 0){//微信底部导航栏“通讯录”的node
-                AccessibilityNodeInfo click_node = NodeFunc.getClickableParentNode(address_list_node);
-                if(click_node != null){
-                    if(click_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-                        LogToFile.write("点击底部导航栏“通讯录”按钮成功。等待 " + String.valueOf(delay_after_click) + " 毫秒。");
+            if(ui_title.equalsIgnoreCase("当前所在页面,新的朋友") && success_click_btn_count == 0){
+                //在“当前所在页面,新的朋友”，取“接受”数量如果==0，说明已经全部接受请求，设置hasFriendRequest = false
+                node_count = NodeFunc.findNodebyID_Class_Text(linearLayout_node,NodeFunc.Wx_NewFriend_RecvBtn_ID,NodeFunc.Wx_NewFriend_RecvBtn_Text,NodeFunc.Wx_NewFriend_RecvBtn_Class,all_node_list);//“接受”node
+                if(node_count == 0 ){
+                    hasFriendRequest = false;
+                    success_click_btn_count++;
+                }
+                run_msg = "在“当前所在页面,新的朋友”，取“接受”数量如果==0，说明已经全部接受请求，设置hasFriendRequest = false,node_count=" + String.valueOf(node_count) + ",success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(address_node != null && newFriend_node == null && success_click_btn_count == 0){
+                //检测到“通讯录”node，但没有检测到“新的朋友”node，应该是在非“通讯录”页面，故点击“通讯录”node
+                clickNode(address_node,delay_after_click);
+                success_click_btn_count++;
+                run_msg = "检测到“通讯录”node，但没有检测到“新的朋友”node，应该是在非“通讯录”页面，故点击“通讯录”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(address_node != null && newFriend_node != null && success_click_btn_count == 0){
+                //检测到“通讯录”node 和 “新的朋友”node，应该是在“通讯录”页面，故点击“新的朋友”node
+                clickNode(newFriend_node,delay_after_click);
+                success_click_btn_count++;
+                //FuncTools.delay(1000);
+                run_msg = "检测到“通讯录”node 和 “新的朋友”node，应该是在“通讯录”页面，故点击“新的朋友”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(recvBtn_node != null && success_click_btn_count == 0){
+                //检测到“接受”node 应该是在“新的朋友”页面，故点击“接受”node
+                clickNode(recvBtn_node,delay_after_click);
+                success_click_btn_count++;
+                run_msg = "检测到“接受”node 应该是在“新的朋友”页面，故点击“接受”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(finishBtn_node != null && success_click_btn_count == 0){
+                //检测到“完成”node 应该是在“详细资料”页面，故点击“完成”node
+                clickNode(finishBtn_node,delay_after_click);
+                //FuncTools.delay(1000);
+                success_click_btn_count++;
+                run_msg = "检测到“完成”node 应该是在“详细资料”页面，故点击“完成”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(SendMsgBtn_node != null && success_click_btn_count == 0){
+                //检测到“发消息”node 应该是在“详细资料”页面，故点击“发消息”node
+                clickNode(SendMsgBtn_node,delay_after_click);
+                success_click_btn_count++;
+                run_msg = "检测到“发消息”node 应该是在“详细资料”页面，故点击“发消息”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+            }
+            if(ui_Title_List.contains(ui_title) && success_click_btn_count == 0){
+                //当前所在页面是“当前所在页面,新的朋友”,“当前所在页面,朋友验证”,“当前所在页面,详细资料”中的一个，但未执行到任何符合条件的判断，等待200毫秒
+                FuncTools.delay(delay_after_click);
+                success_click_btn_count++;
+                run_msg = "当前所在页面是“当前所在页面,新的朋友”,“当前所在页面,朋友验证”,“当前所在页面,详细资料”中的一个，但未执行到任何符合条件的判断，等待200毫秒";
+            }
+            if(success_click_btn_count == 0){
+                //未执行到任何符合条件的判断，查找“返回”node并点击或者直接执行全局“返回”
+                this.printNodeInfo(linearLayout_node);
+                if(backbtn_node != null){
+                    if(clickNode(backbtn_node,delay_after_click)){
                         FuncTools.delay(delay_after_click);
-                        success_click_btn_count++;
-                    }
-                    else LogToFile.write("点击底部导航栏“通讯录”按钮失败。点击的父节点click_node=" + click_node.toString());
-                }
-                else{
-                    LogToFile.write("点击底部导航栏“通讯录”按钮。可点击的父节点click_node=null");
-                }
-            }
-            if(new_friend_node_count > 0 && success_click_btn_count == 0){//微信底部导航栏“通讯录”的node,获取“新的朋友”node，然后点击
-                LogToFile.write("new_friend_node_count=" + String.valueOf(new_friend_node_count) + ",tmp_node_list.size=" + String.valueOf(tmp_node_list.size()));
-                for(AccessibilityNodeInfo new_friend_node : tmp_node_list){
-                    AccessibilityNodeInfo click_node = NodeFunc.getClickableParentNode(new_friend_node);
-                    if(click_node != null){
-                        if(click_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-                            LogToFile.write("点击“通讯录”-“新的朋友”成功。等待 " + String.valueOf(delay_after_click) + " 毫秒。");
-                            FuncTools.delay(delay_after_click);
-                            success_click_btn_count++;
-                        }
-                        else LogToFile.write("点击“通讯录”-“新的朋友”失败。点击的父节点click_node=" + click_node.toString());
                     }
                     else{
-                        LogToFile.write("点击“通讯录”-“新的朋友”。可点击的父节点click_node=null");
+                        this.performBackClick(delay_after_click);
                     }
                 }
-            }
-            if(recv_node != null  && success_click_btn_count == 0){
-                if(recv_node.isClickable()){
-                    if(recv_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-                        LogToFile.write("接受加好友请求，在“新的朋友”页面，点击“接受”按钮成功。等待 " + String.valueOf(delay_after_click) + " 毫秒。");
-                        FuncTools.delay(delay_after_click);
-                        success_click_btn_count++;
-                    }
-                    else LogToFile.write("接受加好友请求，在“新的朋友”页面，点击“接受”按钮失败。点击的父节点click_node=" + recv_node.toString());
+                else{
+                    this.performBackClick(delay_after_click);
                 }
-                else
-                    LogToFile.write("接受加好友请求，在“新的朋友”页面，检测到“接受”按钮，但不可点击。nodeinfo=" + recv_node.toString());
+                run_msg = "未执行到任何符合条件的判断，查找“返回”node并点击或者直接执行全局“返回”." ;
             }
-            if(finish_node != null && success_click_btn_count == 0){
-                if(finish_node.isClickable()){
-                    if(finish_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-                        LogToFile.write("接受加好友请求，在“朋友验证”页面 ，点击“完成”成功。等待 " + String.valueOf(delay_after_click) + " 毫秒。");
-                        FuncTools.delay(delay_after_click);
-                        success_click_btn_count++;
-                    }
-                    else LogToFile.write("接受加好友请求，在“朋友验证”页面 ，点击“完成”按钮失败。点击的父节点click_node=" + finish_node.toString());
-                }
-                else
-                    LogToFile.write("接受加好友请求，在“朋友验证”页面 ，点击“完成”按钮，但不可点击。nodeinfo=" + finish_node.toString());
-            }
-            if(send_msg_node != null && success_click_btn_count == 0){
-                if(send_msg_node.isClickable()){
-                    if(send_msg_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-                        LogToFile.write("接受加好友请求，“验证”完成后“发消息”，点击“发消息”成功。等待 " + String.valueOf(delay_after_click) + " 毫秒。");
-                        FuncTools.delay(delay_after_click);
-                        success_click_btn_count++;
-                    }
-                    else LogToFile.write("接受加好友请求，“验证”完成后“发消息”，点击“发消息”失败。点击的父节点click_node=" + send_msg_node.toString());
-
-                    hasFriendRequestCount--;
-                    if(hasFriendRequestCount == 0) hasFriendRequest = false;
-                }
-                else
-                    LogToFile.write("接受加好友请求，“验证”完成后“发消息”，点击“发消息”按钮，但不可点击。nodeinfo=" + send_msg_node.toString());
-            }
-            if(success_click_btn_count == 0) this.performBackClick(delay_after_click);
         }
         catch (Exception e){
             LogToFile.write("dealNewfriendRequest Fail!Error=" + e.getMessage());
             LogToFile.toast("dealNewfriendRequest Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write(run_msg);
+            LogToFile.write("处理好友请求运行结束,dealNewfriendRequest run over.success_click_btn_count=" + String.valueOf(success_click_btn_count) + ",ui_title="+ ui_title);
         }
-        LogToFile.write("处理好友请求运行结束,dealNewfriendRequest run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
+    }
+    //region 点击按钮
+    //endregion
+    public boolean clickNode(AccessibilityNodeInfo node,int delay_after_click){
+        boolean f = false;
+        try{
+            if(node != null){
+                AccessibilityNodeInfo click_node = NodeFunc.getClickableParentNode(node);
+                if(click_node != null){
+                    f = click_node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    FuncTools.delay(delay_after_click);
+                }
+            }
+        }
+        catch (Exception e){
+            LogToFile.write("dealNewfriendRequest Fail!Error=" + e.getMessage());
+            LogToFile.toast("dealNewfriendRequest Fail!Error=" + e.getMessage());
+        }finally {
+            return f;
+        }
+    }
+    //region 获取底栏按钮 node NodeFunc.Wx_BottomMenu_Text[1]
+    //endregion
+    public AccessibilityNodeInfo getBottomMenuBtn(String BottomMenu_Text){
+        LogToFile.write("获取底栏按钮开始运行,getBottomMenuBtn is running...");
+        int success_click_btn_count = 0;
+        int delay_after_click = 200;//click后延迟200毫秒
+        int max_run_count = 10;
+        int run_count = 0;
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo backbtn_node = null;
+        AccessibilityNodeInfo address_node = null;
+        String ui_title = "";
+
+        try{
+            AccessibilityNodeInfo old_node = this.getRootInActiveWindow();
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow());
+            backbtn_node = NodeFunc.getBackBtnNodeinLinearLayout(linearLayout_node);
+            address_node = NodeFunc.getBottomBtnNodeinLinearLayout(linearLayout_node,BottomMenu_Text);
+            while(address_node == null && run_count<max_run_count){
+                if(old_node.equals(this.getRootInActiveWindow())){
+                    old_node = this.getRootInActiveWindow();
+                    if(backbtn_node != null){
+                        AccessibilityNodeInfo click_node = NodeFunc.getClickableParentNode(backbtn_node);
+                        if(click_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
+                            FuncTools.delay(delay_after_click);
+                        }
+                        else this.performBackClick(delay_after_click);
+                    }
+                    else{
+                        this.performBackClick(delay_after_click);
+                    }
+                }
+                else FuncTools.delay(delay_after_click);
+
+                linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow());
+                backbtn_node = NodeFunc.getBackBtnNodeinLinearLayout(linearLayout_node);
+                address_node = NodeFunc.getBottomBtnNodeinLinearLayout(linearLayout_node,NodeFunc.Wx_BottomMenu_Text[1]);
+                run_count++;
+            }
+
+        }
+        catch (Exception e){
+            LogToFile.write("getBottomMenuBtn Fail!Error=" + e.getMessage());
+            LogToFile.toast("getBottomMenuBtn Fail!Error=" + e.getMessage());
+        }finally {
+            if(address_node != null) ui_title = NodeFunc.getText(address_node);
+            LogToFile.write("获取底栏按钮运行结束,getBottomMenuBtn run over.run_count=" + String.valueOf(run_count) + ",BottomMenu_Text="+ ui_title);
+            return address_node;
+        }
+    }
+    //region 获取当前页面非空标题
+    //endregion
+    public String  getNotEmptyUITitle(){
+        //LogToFile.write("获取当前页面非空标题开始运行,getUITitle is running...");
+        int delay_after_click = 200;//click后延迟200毫秒
+        int max_run_count = 10;
+        int run_count = 0;
+        String ui_title = "";
+
+        try{
+            AccessibilityNodeInfo old_node = this.getRootInActiveWindow();
+            ui_title = NodeFunc.getContentDescription(old_node);
+            run_count = 0;
+            //LogToFile.write("run_count=" + String.valueOf(run_count) + ",ui_title="+ ui_title);
+            while(ui_title.isEmpty() && run_count < max_run_count){
+                if(old_node.equals(this.getRootInActiveWindow())){
+                    old_node = this.getRootInActiveWindow();
+                    this.performBackClick(delay_after_click);
+                }
+                else{
+                    FuncTools.delay(delay_after_click);
+                }
+                ui_title = NodeFunc.getContentDescription(this.getRootInActiveWindow());
+                run_count++;
+            }
+        }
+        catch (Exception e){
+            LogToFile.write("getNotEmptyUITitle Fail!Error=" + e.getMessage());
+            LogToFile.toast("getNotEmptyUITitle Fail!Error=" + e.getMessage());
+        }finally {
+            //LogToFile.write("获取当前页面非空标题运行结束,getNotEmptyUITitle run over.run_count=" + String.valueOf(run_count) + ",ui_title="+ ui_title);
+            return ui_title;
+        }
     }
     //region 判断是否有“切换到键盘”按钮，如有切换到输入界面
     //endregion
@@ -1069,25 +1196,31 @@ public class AutomationService extends BaseAccessibilityService {
      */
     //endregion
     private void notifyWechat(AccessibilityEvent event) {
+        String content = "";
         try {
             if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
                 Notification notification = (Notification) event.getParcelableData();
                 if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED && event.getPackageName().equals(NodeFunc.Wx_PackageName)) {
-                    if (notification.priority == Notification.PRIORITY_HIGH || notification.priority == Notification.PRIORITY_DEFAULT)//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;
-                    {
-                        String content = notification.tickerText.toString();
-                        //LogToFile.write("content:" + content);
-                        String[] cc = content.split(":");
-                        sname = cc[0].trim();
-                        scontent = cc[1].trim();
-                    } else if (notification.priority == Notification.PRIORITY_MAX) {//加好友信息 PRIORITY_MAX = 2
-                        String content = notification.tickerText.toString();
-                        //LogToFile.write("content:" + content);
+                    //if (notification.priority == Notification.PRIORITY_HIGH || notification.priority == Notification.PRIORITY_DEFAULT)//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;//加好友信息 PRIORITY_MAX = 2
+                    content = notification.tickerText.toString();
+                    if (content.contains("请求添加你为")) {//加好友信息 PRIORITY_MAX = 2
                         String[] cc = content.split("请求添加你为");
                         sname = cc[0].trim();
                         scontent = cc[1].trim();
+                        hasFriendRequest = true;
                     }
-
+                    else
+                    {
+                        String[] cc = content.split("\\:");
+                        if(cc.length >= 2) {
+                            sname = cc[0].trim();
+                            scontent = cc[1].trim();
+                        }
+                        else{
+                            scontent = content;
+                        }
+                        hasAction = true;
+                    }
                 }
                 PendingIntent pendingIntent = notification.contentIntent;
                 try {
@@ -1098,8 +1231,8 @@ public class AutomationService extends BaseAccessibilityService {
             }
         }
         catch (Exception e){
-            LogToFile.write("notifyWechat Fail!Error=" + e.getMessage());
-            LogToFile.toast("notifyWechat Fail!Error=" + e.getMessage());
+            LogToFile.write("notifyWechat Fail!Error=" + e.getMessage() + ",content=" + content);
+            LogToFile.toast("notifyWechat Fail!Error=" + e.getMessage() + ",content=" + content);
         }
     }
     //region 自动回复信息

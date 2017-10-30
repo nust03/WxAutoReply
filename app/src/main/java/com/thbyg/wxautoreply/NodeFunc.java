@@ -1,6 +1,7 @@
 package com.thbyg.wxautoreply;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.ArrayList;
@@ -134,6 +135,22 @@ public class NodeFunc {
     public static String Wx_BackBtn_Class = "android.widget.ImageView";
     //-----------------------“返回” 标识结束--------------------------------------
 
+    //-----------------------“当前所在页面” 标识开始--------------------------------------
+    public static List<String> Wx_CurrentUI__Title = new ArrayList<>(Arrays.asList("新的朋友","朋友验证","详细资料","朋友圈","设置","与订阅号的聊天"));
+    //-----------------------“当前所在页面” 标识结束--------------------------------------
+
+    //-----------------------“正在处理...”等待对话框 标识开始--------------------------------------
+    public static String Wx_DealingUI_ID = "com.tencent.mm:id/tj";
+    public static String Wx_DealingUI_Class = "android.widget.TextView";
+    public static String Wx_DealingUI_Text = "正在处理...";
+    //-----------------------“正在处理...”等待对话框 标识结束--------------------------------------
+
+    //-----------------------“请稍候...”等待对话框 标识开始--------------------------------------
+    public static String Wx_WaitingUI_Class = "android.widget.TextView";
+    public static String Wx_WaitingUI_Text = "请稍候...";
+    //-----------------------“请稍候...”等待对话框 标识结束--------------------------------------
+
+
     //region 获取node的 属性 字符串 ，以防null错误；
     //endregion
     private String getNodeAttrString(AccessibilityNodeInfo node,String Attr){
@@ -153,6 +170,78 @@ public class NodeFunc {
             LogToFile.write("run Fail!Error=" + e.getMessage());
         }finally {
             return ret_str;
+        }
+    }
+
+    //region 从android.widget.LinearLayout节点查找“返回”按钮的node信息
+    //endregion
+    public static AccessibilityNodeInfo getBottomBtnNodeinLinearLayout(AccessibilityNodeInfo linearLayout_node,String btn_name) {
+        AccessibilityNodeInfo backbtn_node = null;
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        try {
+            if (linearLayout_node != null) {
+                getAllNodeInfo(linearLayout_node,all_node_list);
+                for(AccessibilityNodeInfo node : all_node_list){
+                    if(Wx_BottomMenu_Btn_ID.equalsIgnoreCase(getViewIdResourceName(node)) && Wx_BottomMenu_Btn_Class.equalsIgnoreCase(getClassName(node)) && btn_name.equalsIgnoreCase(getText(node)) && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
+                        backbtn_node = node;
+                        break;
+                    }
+                }
+            }
+        }catch (Exception e){
+            LogToFile.write("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+            LogToFile.toast("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+        }finally {
+            return backbtn_node;
+        }
+    }
+    //region 从android.widget.LinearLayout节点查找“返回”按钮的node信息
+    //endregion
+    public static AccessibilityNodeInfo getBackBtnNodeinLinearLayout(AccessibilityNodeInfo linearLayout_node) {
+        AccessibilityNodeInfo backbtn_node = null;
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        try {
+            if (linearLayout_node != null) {
+                getAllNodeInfo(linearLayout_node,all_node_list);
+                for(AccessibilityNodeInfo node : all_node_list){
+                    if("android.widget.ImageView".equalsIgnoreCase(getClassName(node)) && "返回".equalsIgnoreCase(getContentDescription(node)) && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
+                        backbtn_node = node;
+                        break;
+                    }
+                }
+            }
+        }catch (Exception e){
+            LogToFile.write("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+            LogToFile.toast("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+        }finally {
+            return backbtn_node;
+        }
+    }
+    //region 获取android.widget.LinearLayout节点，且Rect同RootNode；
+    //endregion
+    public static AccessibilityNodeInfo getLinearLayoutNodeinfo(AccessibilityNodeInfo RootNode) {
+        AccessibilityNodeInfo linearLayout_node = null;
+        List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        Rect root_rect = new Rect();
+        Rect node_rect = new Rect();
+        try {
+            if (RootNode != null) {
+                RootNode.getBoundsInScreen(root_rect);
+                getAllNodeInfo(RootNode,all_node_list);
+                for(AccessibilityNodeInfo node : all_node_list){
+                    String classname = getClassName(node);
+                    node.getBoundsInScreen(node_rect);
+                    if("android.widget.LinearLayout".trim().equalsIgnoreCase(classname) && node_rect.equals(root_rect) && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
+                        linearLayout_node = node;
+                        break;
+                    }
+                }
+            }
+        }catch (Exception e){
+            LogToFile.write("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+            LogToFile.toast("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
+        }finally {
+            return linearLayout_node;
         }
     }
     //region 获取node的所有子节点；
@@ -196,6 +285,27 @@ public class NodeFunc {
         }
         return node_count;
     }
+    //region 根据ClassName、ContentDesc 获取 Node
+    //endregion
+    public static AccessibilityNodeInfo findNodebyClass_Desc(AccessibilityNodeInfo root_node , String ClassName, String ContentDesc){
+        AccessibilityNodeInfo node = null;
+        int node_count = 0;
+        if(root_node != null){
+            List<AccessibilityNodeInfo> nodeInfoList = new ArrayList<AccessibilityNodeInfo>();
+            getAllNodeInfo(root_node,nodeInfoList);
+            int i = 0 ;
+            for(AccessibilityNodeInfo sub_node : nodeInfoList)
+            {
+                String class_name = getClassName(sub_node);
+                if(ClassName.trim().equalsIgnoreCase(class_name) && getContentDescription(sub_node).equalsIgnoreCase(ContentDesc) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName) ){
+                    node  = sub_node;
+                    node_count++;
+                }
+            }
+
+        }
+        return node;
+    }
 
     //region 根据text、ClassName获取NodeList,返回node数量
     //endregion
@@ -226,6 +336,34 @@ public class NodeFunc {
 
         }
         return node_count;
+    }
+    //region 根据text、AccessibilityNodeInfo
+    //endregion
+    public static AccessibilityNodeInfo findNodebyText_Class(AccessibilityNodeInfo root_node , String text, String ClassName){
+        AccessibilityNodeInfo node = null;
+        int node_count = 0;
+        if(root_node != null){
+            List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByText(text);
+            if(nodeInfoList.size() == 0){
+                //LogToFile.write("根据Text=" + text + "未发现节点！");
+            }
+            else{
+                //LogToFile.write("根据Text=" + text + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
+                int i = 0 ;
+                for(AccessibilityNodeInfo sub_node : nodeInfoList)
+                {
+                    //LogToFile.write(sub_node.toString());
+                    String class_name = getClassName(sub_node);
+                    if(ClassName.trim().equalsIgnoreCase(class_name) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName) && getText(sub_node).equalsIgnoreCase(text)){
+                        node_count++;
+                        node = sub_node;
+                        break;
+                    }
+                }
+            }
+
+        }
+        return node;
     }
 
     //region 根据ID、ClassName获取Node
