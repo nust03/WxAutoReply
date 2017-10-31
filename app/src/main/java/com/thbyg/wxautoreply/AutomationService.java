@@ -53,7 +53,8 @@ public class AutomationService extends BaseAccessibilityService {
     private static AutomationService mService = null;
     AccessibilityNodeInfo focused_node = null;
     List<AccessibilityNodeInfo> nodelist = new ArrayList<AccessibilityNodeInfo>();
-    private static String[] autoplay_msg = new String[]{"[微笑][微笑][微笑]", "[玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰]", "[强][强][强]", "[拥抱][拥抱]", "[握手][握手]", "[拳头][拳头]", "[OK]", "OK", "ok", "好的", "NB", "好！"};
+    private static String[] autoplay_msg = new String[]{"[微笑][微笑][微笑]", "[玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰][玫瑰]", "[强][强][强]",
+            "[拥抱][拥抱]", "[握手][握手]", "[拳头][拳头]", "[OK]", "OK", "ok", "好的", "HI", "好","Hello","你好"};
     private String ChatName = "";
     private String ChatRecord = "";
     private String VideoSecond = "";
@@ -97,7 +98,7 @@ public class AutomationService extends BaseAccessibilityService {
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
         if(event.getPackageName().toString().equalsIgnoreCase(NodeFunc.Wx_PackageName) == false) return;
-        LogToFile.write(String.format("=====处理 event=%s 开始...", AccessibilityEvent.eventTypeToString(eventType)));
+        LogToFile.write(String.format("=====处理 event=%s 开始...", AccessibilityEvent.eventTypeToString(eventType)) + ",UI_Title=" + NodeFunc.getContentDescription(this.getRootInActiveWindow()));
         if(locked == true) {
             LogToFile.write("重复进入！");
         }
@@ -123,6 +124,11 @@ public class AutomationService extends BaseAccessibilityService {
                     }
                     break;
                     //endregion
+                case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
+                    AccessibilityNodeInfo node= this.getRootInActiveWindow();
+                    if(node != null) {
+                    }
+                    //break;
                 default:
                     if(hasAction && default_run_count == 0){
                         dealAutoReplay(event);//处理自动回复消息
@@ -147,19 +153,12 @@ public class AutomationService extends BaseAccessibilityService {
                             if(second >= 10) goMoments(event);//设置到“朋友圈”页面
                             LogToFile.write("停留在输入界面时长，stay_input_time=" + stay_input_time + ",current_time=" + current_time + ",时长=" + String.valueOf(second));
                             */
-                            //getBottomMenuBtn(NodeFunc.Wx_BottomMenu_Text[1]);
-                            AccessibilityNodeInfo root_node = this.getRootInActiveWindow();
-                            AccessibilityNodeInfo linear_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
-                            List<AccessibilityNodeInfo> nodelist = new ArrayList<AccessibilityNodeInfo>();
-                            if(linear_node != null){
-                                LogToFile.write("Title=" + NodeFunc.getContentDescription(root_node));
-                                //this.printNodeInfo(linear_node,nodelist);
-                            }
+                            //NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow());
                         }
                     }
                     else{
                         stay_input_time = DateUtils.getCurrentTime("yyyy-MM-dd HH:mm:ss");
-                        LogToFile.write("初始化时间stay_input_time=" + stay_input_time);
+                        //LogToFile.write("初始化时间stay_input_time=" + stay_input_time);
 
                     }
             }
@@ -171,7 +170,7 @@ public class AutomationService extends BaseAccessibilityService {
         locked = false;
         LogToFile.write("locked:" + String.valueOf(locked) + ",hasAction=" + String.valueOf(hasAction)  + ",hasReadMPAticle=" + String.valueOf(hasReadMPAticle)
                 + ",hasFriendRequest=" + String.valueOf(hasFriendRequest) + ",hasFriendRequestCount=" + String.valueOf(hasFriendRequestCount));
-        LogToFile.write(String.format("=====处理 event=%s 结束！default_run_count=%d", AccessibilityEvent.eventTypeToString(eventType),default_run_count));
+        LogToFile.write(String.format("=====处理 event=%s 结束！default_run_count=%d", AccessibilityEvent.eventTypeToString(eventType),default_run_count) + ",UI_Title=" + NodeFunc.getContentDescription(this.getRootInActiveWindow()));
     }
     //region 跳转到 聊天 页面 goGroupChatUI(AccessibilityEvent event)
     //endregion
@@ -564,7 +563,20 @@ public class AutomationService extends BaseAccessibilityService {
             }
             if(success_click_btn_count == 0){
                 //未执行到任何符合条件的判断，查找“返回”node并点击或者直接执行全局“返回”
-                this.printNodeInfo(linearLayout_node);
+
+                this.printNodeInfo(linearLayout_node,all_node_list,false);
+                for(AccessibilityNodeInfo nodeInfo : all_node_list){
+                    if ("android.widget.EditText".equalsIgnoreCase(NodeFunc.getClassName(nodeInfo))) {
+                        nodeInfo.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+                        ClipData clip = ClipData.newPlainText("label", autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + "，" + NodeFunc.getTopLeftText(NodeFunc.getContentDescription(root_node)));
+                        ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboardManager.setPrimaryClip(clip);
+                        if(nodeInfo.performAction(AccessibilityNodeInfo.ACTION_PASTE)){
+                            send();
+                        }
+                    }
+                }
+
                 if(backbtn_node != null){
                     if(clickNode(backbtn_node,delay_after_click)){
                         FuncTools.delay(delay_after_click);

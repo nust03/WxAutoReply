@@ -217,26 +217,64 @@ public class NodeFunc {
             return backbtn_node;
         }
     }
+    //region 从界面的ContentDesc取出与TopLeft 的Text
+    //endregion
+    public static String getTopLeftText(String ui_title) {
+        String text = "";
+        try{
+            if(ui_title.indexOf("当前所在页面,") == 0 && ui_title.contains("的聊天") == false){
+                String[] array = ui_title.split(",");
+                if(array.length >= 2) text = array[1];
+            }
+            else if(ui_title.indexOf("当前所在页面,") == 0 && ui_title.contains("的聊天") == true){
+                String[] array = ui_title.split(",与|的聊天");
+                if(array.length >= 2) {
+                    text = array[1];
+                    //LogToFile.write("array.length=" + String.valueOf(array.length) + ",array[1]=" + array[1] + ",ui_title=" + ui_title);
+                }
+            }
+        }catch (Exception e){
+            LogToFile.write("getTopLeftText Fail!Error=" + e.getMessage());
+            LogToFile.toast("getTopLeftText Fail!Error=" + e.getMessage());
+        }finally {
+            return text;
+        }
+    }
     //region 获取android.widget.LinearLayout节点，且Rect同RootNode；
     //endregion
     public static AccessibilityNodeInfo getLinearLayoutNodeinfo(AccessibilityNodeInfo RootNode) {
         AccessibilityNodeInfo linearLayout_node = null;
         List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
+        List<AccessibilityNodeInfo> linearLayout_node_list = new ArrayList<AccessibilityNodeInfo>();
+        AccessibilityNodeInfo top_left_node = null;
         Rect root_rect = new Rect();
         Rect node_rect = new Rect();
+        String ui_title = getContentDescription(RootNode);
+        String top_left_text = "";
         try {
-            if (RootNode != null) {
-                RootNode.getBoundsInScreen(root_rect);
-                getAllNodeInfo(RootNode,all_node_list);
-                for(AccessibilityNodeInfo node : all_node_list){
-                    String classname = getClassName(node);
-                    node.getBoundsInScreen(node_rect);
-                    if("android.widget.LinearLayout".trim().equalsIgnoreCase(classname) && node_rect.equals(root_rect) && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
-                        linearLayout_node = node;
-                        break;
-                    }
+            if (RootNode == null) return null;
+            top_left_text = getTopLeftText(ui_title);
+            RootNode.getBoundsInScreen(root_rect);
+            getAllNodeInfo(RootNode,all_node_list);
+            for(AccessibilityNodeInfo node : all_node_list){
+                String classname = getClassName(node);
+                node.getBoundsInScreen(node_rect);
+                if("android.widget.LinearLayout".trim().equalsIgnoreCase(classname) && node_rect.equals(root_rect) && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
+                    linearLayout_node_list.add(node);
                 }
             }
+            if(linearLayout_node_list.size() == 1) linearLayout_node = linearLayout_node_list.get(0);
+            if(linearLayout_node_list.size() == 0) linearLayout_node = null;
+            int i = 0;
+            for(AccessibilityNodeInfo node : linearLayout_node_list){
+                AccessibilityNodeInfo sub_node = findNodebyText_Class(node,top_left_text,"android.widget.TextView");
+                if(sub_node != null) {
+                    linearLayout_node = node;
+                    break;
+                }
+                i++;
+            }
+            LogToFile.write("UI_Title=" + ui_title + ",top_left_text=" + top_left_text + ",i=" + String.valueOf(i) + ",linearLayout_node_list.size()=" + String.valueOf(linearLayout_node_list.size()) + ",nodeinfo=" + getClassName(linearLayout_node));
         }catch (Exception e){
             LogToFile.write("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
             LogToFile.toast("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
