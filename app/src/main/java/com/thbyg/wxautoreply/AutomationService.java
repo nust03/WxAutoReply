@@ -901,7 +901,7 @@ public class AutomationService extends BaseAccessibilityService {
                 clickNode(backbtn_node,delay_after_back_click);success_click_btn_count++;
                 LogToFile.write("公众号：" + this.MP_Account_Name + " ,点击“返回”,等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
             }
-            if(Readed_Text_List.size() == tuwen_count && tuwen_count > 0 && success_click_btn_count == 0){
+            if(Readed_Text_List.size() >= tuwen_count && tuwen_count > 0 && success_click_btn_count == 0){
                 String msg = "阅读公众号=" + this.MP_Account_Name + " 图文信息结束，共阅读 " + String.valueOf(tuwen_count) + " 条。";
                 LogToFile.write(msg);
                 LogToFile.toast(msg);
