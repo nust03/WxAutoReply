@@ -274,12 +274,39 @@ public class NodeFunc {
                 }
                 i++;
             }
-            LogToFile.write("UI_Title=" + ui_title + ",top_left_text=" + top_left_text + ",i=" + String.valueOf(i) + ",linearLayout_node_list.size()=" + String.valueOf(linearLayout_node_list.size()) + ",nodeinfo=" + getClassName(linearLayout_node));
+            //LogToFile.write("UI_Title=" + ui_title + ",top_left_text=" + top_left_text + ",i=" + String.valueOf(i) + ",linearLayout_node_list.size()=" + String.valueOf(linearLayout_node_list.size()) + ",nodeinfo=" + getClassName(linearLayout_node));
         }catch (Exception e){
             LogToFile.write("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
             LogToFile.toast("getLinearLayoutNodeinfo Fail!Error=" + e.getMessage());
         }finally {
             return linearLayout_node;
+        }
+    }
+    //region 获取listView node的所有子节点；
+    //endregion
+    public static void getAllNodeIncudeListView(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList) {
+        AccessibilityNodeInfo listView_node = null;
+        List<AccessibilityNodeInfo> nodeInfoList = new ArrayList<AccessibilityNodeInfo>();
+        boolean f = true;
+        nodeList.clear();
+        if(info != null) {
+            getAllNodeInfo(info,nodeList);
+            for(AccessibilityNodeInfo node : nodeList){
+                if("android.widget.ListView".equalsIgnoreCase(getClassName(node)) && node.isScrollable() && getPackageName(node).equalsIgnoreCase(Wx_PackageName) ){
+                    listView_node = node;break;
+                }
+            }
+            while (f && listView_node != null){
+                getAllNodeInfo(listView_node,nodeInfoList);
+                for(AccessibilityNodeInfo node : nodeInfoList){
+                    if(nodeList.contains(node) == false){
+                        nodeList.add(node);
+                        LogToFile.write(getText(node));
+                    }
+                }
+                f = listView_node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+                LogToFile.write("f=" + String.valueOf(f));
+            }
         }
     }
     //region 获取node的所有子节点；

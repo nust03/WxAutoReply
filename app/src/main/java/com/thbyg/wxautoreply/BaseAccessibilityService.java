@@ -136,7 +136,7 @@ public class BaseAccessibilityService extends AccessibilityService {
             nodeList.clear();
             recycle(rowNode,nodeList,true,0);
         }
-        LogToFile.write("==============================================结束打印");
+        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
     }
     /**
      * 遍历所有节点并打印
@@ -152,7 +152,7 @@ public class BaseAccessibilityService extends AccessibilityService {
             nodeList.clear();
             recycle(rowNode,nodeList,true,0);
         }
-        LogToFile.write("==============================================结束打印");
+        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
     }
     /**
      * 遍历所有节点并打印
@@ -166,7 +166,7 @@ public class BaseAccessibilityService extends AccessibilityService {
             nodeList.clear();
             recycle(rowNode,nodeList,true,0);
         }
-        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()));
+        LogToFile.write("==============================================结束打印===node count = " + String.valueOf(nodeList.size()) );
     }
     /**
      * 遍历所有节点并打印
