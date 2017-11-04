@@ -43,6 +43,7 @@ public class AutomationService extends BaseAccessibilityService {
     private boolean hasMsgSend = false;//有待发送的信息
     private List<String> MsgReadySend = new ArrayList<String>();//第一个参数是接受人，其余的参数是待发送的信息
     private List<AccessibilityNodeInfo> Readed_Text_List = new ArrayList<AccessibilityNodeInfo>();//已读公众号文章Text
+    private boolean hasAttentionGZH = false;//有待关注的微信公众号任务
     private String Bottom_Menu_Name = "";//底栏菜单按钮所在页面
     private boolean locked = false;
     private boolean background = false;
@@ -437,50 +438,65 @@ public class AutomationService extends BaseAccessibilityService {
     public void dealAutoReplay(AccessibilityEvent event){
         LogToFile.write("处理自动回复消息开始运行,dealAutoReplay is running...");
         int delay_after_click = 200;//click后延迟200毫秒
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo root_node = null;
+        AccessibilityNodeInfo top_left_node = null;
+        AccessibilityNodeInfo chat_node = null;
+        AccessibilityNodeInfo switch2keyboard_node = null;
+        AccessibilityNodeInfo switch2talk_node = null;
+        String ui_title = "";
+        String top_left_text = "";
+        int success_click_btn_count = 0;
         try {
-            if (hasAction) {//有新消息进来，自动随机回复，仅回复群“内部管理群”的新信息
-                itemNodeinfo = null;
-                String className = event.getClassName() == null ? "" : event.getClassName().toString();
-                String contentDesc = event.getContentDescription() == null ? "" : event.getContentDescription().toString();
-
-                //LogToFile.write("className:" + className + ",ContentDescription:" + contentDesc);
-
-                if (className.equalsIgnoreCase("com.tencent.mm.ui.LauncherUI") ) {
-                    String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + ",@" + sname;
-                    if (sname.equalsIgnoreCase("史言兵") || sname.equalsIgnoreCase("优惠券搬运工")) {
-                        if (scontent.indexOf("command") == 0) {
-                            String[] command = scontent.trim().split("-");
-                            if(command.length >= 2) {
-                                if(command[1].trim().equalsIgnoreCase("阅读公众号文章")){
-                                    hasReadMPAticle = true;
-                                    MP_Account_Name = command[2];
-                                    Readed_Text_List.clear();
-                                }
-                                LogToFile.write("接到 " + sname + " 返回微信主界面的命令,command=" + command[1] + ",MP_Account_Name:" + MP_Account_Name + ",hasReadMPAticle=" + String.valueOf(hasReadMPAticle));
-                                msg= sname + ",接到您 " + command[1] + " 命令，即可执行!";
+            itemNodeinfo = null;
+            root_node = this.getRootInActiveWindow();
+            ui_title = NodeFunc.getContentDescription(root_node);//取当前页面描述，标题
+            top_left_text = NodeFunc.getTopLeftText(ui_title);
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+            top_left_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/h2",top_left_text,"android.widget.TextView");
+            chat_node = NodeFunc.findNodebyClass_Desc(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),"android.widget.TextView","聊天信息");
+            switch2keyboard_node = NodeFunc.findNodebyID_Class_Desc(linearLayout_node,"com.tencent.mm:id/a6z","android.widget.ImageButton","切换到键盘");
+            switch2talk_node = NodeFunc.findNodebyID_Class_Desc(linearLayout_node,"com.tencent.mm:id/a6z","android.widget.ImageButton","切换到按住说话");
+            String className = event.getClassName() == null ? "" : event.getClassName().toString();
+            String contentDesc = event.getContentDescription() == null ? "" : event.getContentDescription().toString();
+            if(switch2keyboard_node != null && success_click_btn_count == 0){
+                LogToFile.write("检测到“切换到键盘”按钮，点击。");
+                clickNode(switch2keyboard_node,delay_after_click);success_click_btn_count++;
+            }
+            if (!top_left_text.isEmpty() && top_left_node != null && chat_node != null && switch2talk_node != null && success_click_btn_count == 0 ) {
+                String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + ",@" + sname;
+                if (sname.equalsIgnoreCase("史言兵") || sname.equalsIgnoreCase("优惠券搬运工")) {
+                    if (scontent.indexOf("command") == 0) {
+                        String[] command = scontent.trim().split("-");
+                        if(command.length >= 2) {
+                            if(command[1].trim().equalsIgnoreCase("阅读公众号文章")){
+                                hasReadMPAticle = true;
+                                MP_Account_Name = command[2];
+                                Readed_Text_List.clear();
                             }
+                            LogToFile.write("接到 " + sname + " 返回微信主界面的命令,command=" + command[1] + ",MP_Account_Name:" + MP_Account_Name + ",hasReadMPAticle=" + String.valueOf(hasReadMPAticle));
+                            msg= sname + ",接到您 " + command[1] + " 命令，即可执行!";
                         }
-                        sendMsg(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),msg);
-                        LogToFile.write("自动回复信息:" + msg);
-                        //if(!hasReadMPAticle) this.performHomeClick(200);
                     }
-                    else{
-                        int replay_percent = FuncTools.getRandom(100);
-                        if(replay_percent > 90) {//10%的概率回复其他人的信息
-                            msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + "," + sname + ", " + String.valueOf(replay_percent) + "%";
-                            sendMsg(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),msg);
-                            LogToFile.write("自动回复信息:" + msg);
-                        }
-                        //this.performHomeClick(200);
-                    }
-                    hasAction = false;
-                    AccessibilityNodeInfo chat_node = NodeFunc.findNodebyClass_Desc(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),"android.widget.TextView","聊天信息");
-                    clickNode(chat_node,delay_after_click);
+                    sendMsg(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),msg);
+                    LogToFile.write("自动回复信息:" + msg);
+                    //if(!hasReadMPAticle) this.performHomeClick(200);
                 }
                 else{
-                    LogToFile.write("微信窗口尚未激活，等待 " + String.valueOf(delay_after_click)+ " 毫秒。className=" + className);
-                    FuncTools.delay(delay_after_click);
+                    int replay_percent = FuncTools.getRandom(100);
+                    if(replay_percent > 90) {//10%的概率回复其他人的信息
+                        msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + "," + sname + ", " + String.valueOf(replay_percent) + "%";
+                        sendMsg(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),msg);
+                        LogToFile.write("自动回复信息:" + msg);
+                    }
+                    //this.performHomeClick(200);
                 }
+                hasAction = false;
+                clickNode(chat_node,delay_after_click);success_click_btn_count++;
+            }
+            if(success_click_btn_count == 0){
+                LogToFile.write("微信窗口尚未激活，等待 " + String.valueOf(delay_after_click)+ " 毫秒。ui_title=" + ui_title);
+                FuncTools.delay(delay_after_click);
             }
         }
         catch (Exception e){
@@ -812,6 +828,9 @@ public class AutomationService extends BaseAccessibilityService {
         AccessibilityNodeInfo search_node = null;
         AccessibilityNodeInfo edit_search_node = null;
         AccessibilityNodeInfo gzh_account_node = null;
+        AccessibilityNodeInfo no_result_node = null;
+        AccessibilityNodeInfo more_node = null;
+        AccessibilityNodeInfo history_msg_node = null;
         List<AccessibilityNodeInfo> all_node_list = new ArrayList<AccessibilityNodeInfo>();
         List<AccessibilityNodeInfo> single_article_node_list = new ArrayList<AccessibilityNodeInfo>();
         List<AccessibilityNodeInfo> mularticle_header_node_list = new ArrayList<AccessibilityNodeInfo>();
@@ -837,6 +856,9 @@ public class AutomationService extends BaseAccessibilityService {
             search_node = NodeFunc.findNodebyClass_Desc(linearLayout_node,"android.widget.TextView","搜索");
             edit_search_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/hb","搜索","android.widget.EditText");
             gzh_account_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/v9",MP_Account_Name,"android.widget.TextView");
+            no_result_node  = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/va","无结果","android.widget.TextView");
+            more_node  = NodeFunc.findNodebyClass_Desc(linearLayout_node,"android.widget.TextView","更多");
+            history_msg_node  = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"android:id/title","查看历史消息","android.widget.TextView");
             single_article_node_count = NodeFunc.findNodebyID_Class(linearLayout_node,NodeFunc.Wx_Single_Article_ID,NodeFunc.Wx_Single_Article_Class,single_article_node_list);
             mularticle_header_node_count = NodeFunc.findNodebyID_Class(linearLayout_node,NodeFunc.Wx_MulArticle_Header_ID,NodeFunc.Wx_MulArticle_Header_Class,mularticle_header_node_list);
             mularticle_other_node_count = NodeFunc.findNodebyID_Class(linearLayout_node,NodeFunc.Wx_MulArticle_Other_ID,NodeFunc.Wx_MulArticle_Other_Class,mularticle_other_node_list);
@@ -886,8 +908,16 @@ public class AutomationService extends BaseAccessibilityService {
                 clickNode(gzh_account_node,delay_after_click);success_click_btn_count++;
                 run_msg = "当前所在公众号“搜索”页面，已查找到公众号=" + MP_Account_Name + "并点击,success_click_btn_count=" + String.valueOf(success_click_btn_count);
             }
+            if(ui_title.isEmpty() && NodeFunc.getText(edit_search_node).equalsIgnoreCase(MP_Account_Name) && no_result_node !=  null && success_click_btn_count == 0){
+                clickNode(gzh_account_node,delay_after_click);success_click_btn_count++;
+                run_msg = "当前所在公众号“搜索”页面，未查找到公众号=" + MP_Account_Name + "，转入关注流程。,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+                hasReadMPAticle = false;
+                hasMsgSend = true;//有待发送的信息
+                MsgReadySend.add(sname);//第一个参数是接受人，其余的参数是待发送的信息
+                MsgReadySend.add(run_msg);
+            }
             //region 当前所在页面是 MP_Account_Name 的图文信息界面，按照单图文、多图文头条、多图文其他条的顺序进行阅读
-            if(ui_title.equalsIgnoreCase("当前所在页面,与" + MP_Account_Name + "的聊天") && success_click_btn_count == 0){
+            if(ui_title.equalsIgnoreCase("当前所在页面,与" + MP_Account_Name + "的聊天") && edit_search_node !=  null && success_click_btn_count == 0){
                 if(single_article_node_count > 0 && success_click_btn_count == 0){//发现有单图文，开始点击阅读单图文
                     LogToFile.write("在图文界面发现单图文 single_article_node_count=" +  String.valueOf(single_article_node_count));
                     for(AccessibilityNodeInfo node : single_article_node_list){
@@ -916,6 +946,14 @@ public class AutomationService extends BaseAccessibilityService {
                         }
                     }
                 }
+                if(tuwen_count == 0 && success_click_btn_count == 0){
+                    LogToFile.write("在图文界面未发现图文信息,转入“查看历史信息” tuwen_count=" +  String.valueOf(tuwen_count));
+                    clickNode(edit_search_node,delay_after_back_click);success_click_btn_count++;
+                }
+            }
+            if(ui_title.equalsIgnoreCase("当前所在页面,与" + MP_Account_Name + "的聊天") && more_node !=  null && history_msg_node != null &&  success_click_btn_count == 0){
+                LogToFile.write("在“查看历史信息”界面，点击进入“查看历史信息”按钮， tuwen_count=" +  String.valueOf(tuwen_count));
+                clickNode(history_msg_node,delay_after_back_click);success_click_btn_count++;
             }
             //endregion
             if(backbtn_node != null && TuWenReadUI_WebPage_node != null && success_click_btn_count == 0){//发现返回按钮
@@ -1516,6 +1554,12 @@ public class AutomationService extends BaseAccessibilityService {
                         sname = cc[0].trim();
                         scontent = cc[1].trim();
                         hasFriendRequest = true;
+                    }
+                    else if (content.contains("向你推荐了")) {//加好友信息 PRIORITY_MAX = 2
+                        String[] cc = content.split("向你推荐了");
+                        sname = cc[0].trim();
+                        scontent = cc[1].trim();
+                        hasAttentionGZH = true;
                     }
                     else
                     {
