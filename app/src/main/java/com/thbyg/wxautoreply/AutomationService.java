@@ -35,6 +35,8 @@ public class AutomationService extends BaseAccessibilityService {
     //region 全局参数定义
     private final static String MM_PNAME = "com.tencent.mm";
     private String pre_notification_time = null;
+    private boolean hasNotification = false;//有新通知信息
+    private String notification_text = null;
     private boolean hasAction = false;//自动回复信息
     private boolean hasFriendRequest = false;//接受好友请求
     private int hasFriendRequestCount = 0;
@@ -135,12 +137,20 @@ public class AutomationService extends BaseAccessibilityService {
                     }
                     //break;
                 default:
+                    if(hasNotification && default_run_count == 0){
+                        dealNotificationMsg(event);//处理通知消息
+                        default_run_count++;
+                    }
                     if(hasAction && default_run_count == 0){
                         dealAutoReplay(event);//处理自动回复消息
                         default_run_count++;
                     }
                     if(hasFriendRequest  && default_run_count == 0){
                         dealNewfriendRequest(event);//处理好友请求
+                        default_run_count++;
+                    }
+                    if(hasAttentionGZH  && default_run_count == 0){
+                        dealAttentionGZHRequest(event);//处理加公众号关注请求
                         default_run_count++;
                     }
                     if(hasReadMPAticle && default_run_count == 0){//处理阅读公众号文章
@@ -151,7 +161,7 @@ public class AutomationService extends BaseAccessibilityService {
                         dealMsgReadySend(event);
                         default_run_count++;
                     }
-                    if(hasAction == false && hasFriendRequest == false && hasReadMPAticle == false && hasMsgSend == false  && default_run_count == 0){
+                    if(hasAction == false && hasFriendRequest == false && hasReadMPAticle == false && hasMsgSend == false  && hasAttentionGZH == false && hasNotification == false && default_run_count == 0){
                         Bottom_Menu_Name = "";
                         switch2Keyboard(event);//判断是否有“切换到键盘”按钮，如有切换到输入界面
                     }
@@ -433,6 +443,64 @@ public class AutomationService extends BaseAccessibilityService {
         }
         LogToFile.write("处理通知消息运行结束,dealNotificationEvent run over.");
     }
+    //region 根据通知消息，判断下一步命令
+    //endregion
+    public void dealNotificationMsg(AccessibilityEvent event){
+        LogToFile.write("根据通知消息，判断下一步命令 开始运行,dealNotificationMsg is running...");
+        int delay_after_click = 200;//click后延迟200毫秒
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo root_node = null;
+        AccessibilityNodeInfo top_left_node = null;
+        AccessibilityNodeInfo chat_node = null;
+        AccessibilityNodeInfo switch2keyboard_node = null;
+        AccessibilityNodeInfo switch2talk_node = null;
+        String ui_title = "";
+        String top_left_text = "";
+        String package_name = "";
+        int success_click_btn_count = 0;
+        try {
+            root_node = this.getRootInActiveWindow();
+            ui_title = NodeFunc.getContentDescription(root_node);//取当前页面描述，标题
+            top_left_text = NodeFunc.getTopLeftText(ui_title);
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+            package_name = NodeFunc.getPackageName(root_node);
+            if (event.getEventType() != AccessibilityEvent.TYPE_WINDOWS_CHANGED && event.getPackageName().equals(NodeFunc.Wx_PackageName)  && success_click_btn_count == 0) {
+                FuncTools.delay(delay_after_click);success_click_btn_count++;
+            }
+            if (notification_text.contains("请求添加你为") && success_click_btn_count == 0) {//加好友信息 PRIORITY_MAX = 2
+                String[] cc = notification_text.split("请求添加你为");
+                sname = cc[0].trim();scontent = cc[1].trim();hasFriendRequest = true;success_click_btn_count++;
+            }
+            if (notification_text.contains("向你推荐了") && success_click_btn_count == 0) {//加好友信息 PRIORITY_MAX = 2
+                String[] cc = notification_text.split("向你推荐了");
+                sname = cc[0].trim();scontent = cc[1].trim();hasAttentionGZH = true;success_click_btn_count++;
+                if(sname.contains(":")){
+                    cc = sname.split("\\:"); sname = cc[0].trim();
+                }
+            }
+            if(success_click_btn_count == 0)
+            {
+                String[] cc = notification_text.split("\\:");
+                if(cc.length >= 2) {
+                    sname = cc[0].trim();scontent = cc[1].trim();
+                }
+                else{
+                    scontent = notification_text;
+                }
+                hasAction = true;
+            }
+
+        }
+        catch (Exception e){
+            LogToFile.write("dealNotificationMsg Fail!Error=" + e.getMessage());
+            LogToFile.toast("dealNotificationMsg Fail!Error=" + e.getMessage());
+        }finally {
+            hasNotification = false;
+            LogToFile.write("根据通知消息，判断下一步命令 运行结束,dealNotificationMsg run over.");
+        }
+
+    }
+
     //region 处理自动回复消息
     //endregion
     public void dealAutoReplay(AccessibilityEvent event){
@@ -502,8 +570,10 @@ public class AutomationService extends BaseAccessibilityService {
         catch (Exception e){
             LogToFile.write("dealAutoReplay Fail!Error=" + e.getMessage());
             LogToFile.toast("dealAutoReplay Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("处理自动回复消息运行结束,dealAutoReplay run over.");
         }
-        LogToFile.write("处理自动回复消息运行结束,dealAutoReplay run over.");
+
     }
     //region 处理好友请求
     //endregion
@@ -606,6 +676,90 @@ public class AutomationService extends BaseAccessibilityService {
         }finally {
             LogToFile.write(run_msg);
             LogToFile.write("处理好友请求运行结束,dealNewfriendRequest run over.success_click_btn_count=" + String.valueOf(success_click_btn_count) + ",ui_title="+ ui_title);
+        }
+    }
+    //region 处理加公众号关注请求
+    //endregion
+    public void dealAttentionGZHRequest(AccessibilityEvent event){
+        LogToFile.write("处理加公众号关注请求 开始运行,dealAttentionGZHRequest is running...");
+        int delay_after_click = 200;//click后延迟200毫秒
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo root_node = null;
+        AccessibilityNodeInfo top_left_node = null;
+        AccessibilityNodeInfo chat_node = null;
+        AccessibilityNodeInfo attention_node = null;
+        AccessibilityNodeInfo entry_node = null;
+        AccessibilityNodeInfo switch2keyboard_node = null;
+        AccessibilityNodeInfo gzh_card_node = null;
+        List<AccessibilityNodeInfo> gzh_card_node_list = new ArrayList<AccessibilityNodeInfo>();
+        int gzh_card_node_count = 0;
+        AccessibilityNodeInfo gzh_card_parent_node = null;
+        String ui_title = "";
+        String gzh_card_node_text = "";
+        String top_left_text = "";
+        int success_click_btn_count = 0;
+        boolean run_flag = false;
+        try {
+            itemNodeinfo = null;
+            root_node = this.getRootInActiveWindow();
+            ui_title = NodeFunc.getContentDescription(root_node);//取当前页面描述，标题
+            top_left_text = NodeFunc.getTopLeftText(ui_title);
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+            top_left_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/h2",top_left_text,"android.widget.TextView");
+            chat_node = NodeFunc.findNodebyClass_Desc(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),"android.widget.TextView","聊天信息");
+            switch2keyboard_node = NodeFunc.findNodebyID_Class_Desc(linearLayout_node,"com.tencent.mm:id/a6z","android.widget.ImageButton","切换到键盘");
+            attention_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"android:id/title","关注","android.widget.TextView");
+            entry_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"android:id/title","进入公众号","android.widget.TextView");
+            //region 从聊天界面提取符合条件“公众号名片” gzh_card_node
+            gzh_card_node_count = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/a_t","公众号名片","android.widget.TextView",gzh_card_node_list);//公众号名片
+            for(AccessibilityNodeInfo node : gzh_card_node_list){
+                gzh_card_parent_node = node.getParent();
+                AccessibilityNodeInfo card_name_node = NodeFunc.findNodebyID_Class(gzh_card_parent_node,"com.tencent.mm:id/a_r","android.widget.TextView");
+                if(card_name_node != null){
+                    if(scontent.equalsIgnoreCase(NodeFunc.getText(card_name_node))){
+                        gzh_card_node = card_name_node;gzh_card_node_text = NodeFunc.getText(card_name_node);break;
+                    }
+                }
+
+            }
+            //endregion
+            if(switch2keyboard_node != null && success_click_btn_count == 0){
+                run_flag = clickNode(switch2keyboard_node,delay_after_click);success_click_btn_count++;
+                LogToFile.write("检测到“切换到键盘”按钮，点击。" + ",run_flag=" + String.valueOf(run_flag));
+            }
+            if(gzh_card_node != null && success_click_btn_count == 0){
+                run_flag = clickNode(gzh_card_node,delay_after_click);success_click_btn_count++;
+                LogToFile.write("发现“公众号名片”，点击，等待 " + String.valueOf(delay_after_click)+ " 毫秒。gzh_card_node_text=" + gzh_card_node_text + ",run_flag=" + String.valueOf(run_flag));
+            }
+            if(ui_title.equalsIgnoreCase("当前所在页面,详细资料") && attention_node != null && success_click_btn_count == 0){
+                LogToFile.write("发现“关注”按钮，点击，等待 " + String.valueOf(delay_after_click)+ " 毫秒。gzh_card_node_text=" + gzh_card_node_text);
+                if(clickNode(attention_node,delay_after_click)){
+                    hasAttentionGZH = false;
+                    hasMsgSend = true;
+                    MsgReadySend.add(sname);//第一个参数是接受人，其余的参数是待发送的信息
+                    MsgReadySend.add("关注公众号“" + scontent + "”成功！");
+                }
+                success_click_btn_count++;
+            }
+            if(ui_title.equalsIgnoreCase("当前所在页面," + scontent) && entry_node != null && success_click_btn_count == 0){
+                run_flag = clickNode(entry_node,delay_after_click);
+                hasAttentionGZH = false;
+                hasMsgSend = true;
+                MsgReadySend.add(sname);//第一个参数是接受人，其余的参数是待发送的信息
+                MsgReadySend.add("已关注公众号“" + scontent + "”！");
+                success_click_btn_count++;
+                LogToFile.write("发现“进入公众号”按钮，点击，等待 " + String.valueOf(delay_after_click)+ " 毫秒。gzh_card_node_text=" + gzh_card_node_text + ",run_flag=" + String.valueOf(run_flag));
+            }
+            if(success_click_btn_count == 0){
+                LogToFile.write("微信窗口尚未激活，等待 " + String.valueOf(delay_after_click)+ " 毫秒。ui_title=" + ui_title);
+                FuncTools.delay(delay_after_click);
+            }
+        }
+        catch (Exception e){
+            LogToFile.write("dealAttentionGZHRequest Fail!Error=" + e.getMessage());
+            LogToFile.toast("dealAttentionGZHRequest Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("处理加公众号关注请求 运行结束,dealAttentionGZHRequest run over.");
         }
     }
     // region 接到阅读公众号命令，阅读公众号文章--老方法
@@ -1059,7 +1213,7 @@ public class AutomationService extends BaseAccessibilityService {
                 run_msg = "开始发送信息到联系人=" + MsgReadySend.get(0) + ",发送数量 success_click_btn_count=" + String.valueOf(success_click_btn_count);
             }
             if(ui_title.equalsIgnoreCase("当前所在页面,与" + MsgReadySend.get(0) + "的聊天") && success_click_btn_count >= 2){
-                hasMsgSend = false;
+                hasMsgSend = false;MsgReadySend.clear();
                 AccessibilityNodeInfo chat_node = NodeFunc.findNodebyClass_Desc(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),"android.widget.TextView","聊天信息");
                 clickNode(chat_node,delay_after_click);
                 run_msg = "成功发送信息到联系人=" + MsgReadySend.get(0) + ",成功发送数量>=2, success_click_btn_count=" + String.valueOf(success_click_btn_count);
@@ -1248,49 +1402,45 @@ public class AutomationService extends BaseAccessibilityService {
     //region 判断是否有“切换到键盘”按钮，如有切换到输入界面
     //endregion
     public void switch2Keyboard(AccessibilityEvent event){
-        //LogToFile.write("判断是否有“切换到键盘”按钮，如有切换到输入界面开始运行,switch2Keyboard is running...");
-        int success_click_btn_count = 0;
+        LogToFile.write("判断是否有“切换到键盘”按钮，如有切换到输入界面 开始运行,switch2Keyboard is running...");
         int delay_after_click = 200;//click后延迟200毫秒
-        try{
-            List<AccessibilityNodeInfo> tmp_node_list = new ArrayList<AccessibilityNodeInfo>();
-            //输入界面，检测“切换到按住说话”按钮或者“切换到键盘”按钮
-            int node_count = NodeFunc.findNodebyID_Class(this.getRootInActiveWindow(),NodeFunc.Wx_Switch2TalkBtn_ID,NodeFunc.Wx_Switch2TalkBtn_Class,tmp_node_list);
-            AccessibilityNodeInfo switch2Talk_node = null;
-            AccessibilityNodeInfo switch2Keyboard_node = null;
-            AccessibilityNodeInfo bottom_wechat_node = null;//底栏“微信”node
-            AccessibilityNodeInfo bottom_address_node = null;//底栏“通讯录”node
-            AccessibilityNodeInfo bottom_find_node = null;//底栏“发现”node
-            AccessibilityNodeInfo bottom_wo_node = null;//底栏“我”node
-
-            if(node_count > 0){
-                for(AccessibilityNodeInfo node : tmp_node_list){
-                    if(NodeFunc.Wx_Switch2KeyboardBtn_Desc.trim().equalsIgnoreCase(NodeFunc.getContentDescription(node)) && node.isClickable()) {
-                        switch2Keyboard_node = node;
-                        //LogToFile.write("发现“切换到键盘”按钮。nodeinfo=" + node.getContentDescription().toString());
-                    }
-                    else if(NodeFunc.Wx_Switch2TalkBtn_Desc.trim().equalsIgnoreCase(NodeFunc.getContentDescription(node)) && node.isClickable()) {
-                        switch2Talk_node = node;
-                        //LogToFile.write("发现“切换到按住说话”按钮。nodeinfo=" + node.getContentDescription().toString());
-                    }
-                }
+        AccessibilityNodeInfo linearLayout_node = null;
+        AccessibilityNodeInfo root_node = null;
+        AccessibilityNodeInfo top_left_node = null;
+        AccessibilityNodeInfo chat_node = null;
+        AccessibilityNodeInfo switch2keyboard_node = null;
+        AccessibilityNodeInfo switch2talk_node = null;
+        String ui_title = "";
+        String top_left_text = "";
+        int success_click_btn_count = 0;
+        try {
+            itemNodeinfo = null;
+            root_node = this.getRootInActiveWindow();
+            ui_title = NodeFunc.getContentDescription(root_node);//取当前页面描述，标题
+            top_left_text = NodeFunc.getTopLeftText(ui_title);
+            linearLayout_node = NodeFunc.getLinearLayoutNodeinfo(root_node);
+            top_left_node = NodeFunc.findNodebyID_Class_Text(linearLayout_node,"com.tencent.mm:id/h2",top_left_text,"android.widget.TextView");
+            chat_node = NodeFunc.findNodebyClass_Desc(NodeFunc.getLinearLayoutNodeinfo(this.getRootInActiveWindow()),"android.widget.TextView","聊天信息");
+            switch2keyboard_node = NodeFunc.findNodebyID_Class_Desc(linearLayout_node,"com.tencent.mm:id/a6z","android.widget.ImageButton","切换到键盘");
+            switch2talk_node = NodeFunc.findNodebyID_Class_Desc(linearLayout_node,"com.tencent.mm:id/a6z","android.widget.ImageButton","切换到按住说话");
+            if(switch2keyboard_node != null && success_click_btn_count == 0){
+                LogToFile.write("检测到“切换到键盘”按钮，点击。");
+                clickNode(switch2keyboard_node,delay_after_click);success_click_btn_count++;
             }
-            if(switch2Keyboard_node != null && success_click_btn_count == 0){//检测到“切换到键盘”按钮即开始点击，切换到输入界面
-                if(switch2Keyboard_node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                    LogToFile.write("发现“切换到键盘”按钮。切换到“切换到按住说话”成功" );
-                    FuncTools.delay(delay_after_click);
-                }
-                else LogToFile.write("发现“切换到键盘”按钮。切换到“切换到按住说话”失败" );
-                success_click_btn_count++;
+            if (!top_left_text.isEmpty() && top_left_node != null && chat_node != null && switch2talk_node != null && success_click_btn_count == 0 ) {
+                clickNode(chat_node,delay_after_click);success_click_btn_count++;
             }
             if(success_click_btn_count == 0){
-                //this.performHomeClick(delay_after_click);
+                LogToFile.write("微信窗口尚未激活，等待 " + String.valueOf(delay_after_click)+ " 毫秒。ui_title=" + ui_title);
+                FuncTools.delay(delay_after_click);
             }
         }
         catch (Exception e){
             LogToFile.write("switch2Keyboard Fail!Error=" + e.getMessage());
             LogToFile.toast("switch2Keyboard Fail!Error=" + e.getMessage());
+        }finally {
+            LogToFile.write("判断是否有“切换到键盘”按钮，如有切换到输入界面 运行结束,switch2Keyboard run over.");
         }
-        //LogToFile.write("判断是否有“切换到键盘”按钮，如有切换到输入界面 运行结束,switch2Keyboard run over.success_click_btn_count=" + String.valueOf(success_click_btn_count));
     }
     //region 跳转到聊天界面发送信息
     //endregion
@@ -1548,31 +1698,8 @@ public class AutomationService extends BaseAccessibilityService {
                 Notification notification = (Notification) event.getParcelableData();
                 if (event.getEventType() == AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED && event.getPackageName().equals(NodeFunc.Wx_PackageName)) {
                     //if (notification.priority == Notification.PRIORITY_HIGH || notification.priority == Notification.PRIORITY_DEFAULT)//文字信息 PRIORITY_HIGH = 1;PRIORITY_DEFAULT = 0;//加好友信息 PRIORITY_MAX = 2
-                    content = notification.tickerText.toString();
-                    if (content.contains("请求添加你为")) {//加好友信息 PRIORITY_MAX = 2
-                        String[] cc = content.split("请求添加你为");
-                        sname = cc[0].trim();
-                        scontent = cc[1].trim();
-                        hasFriendRequest = true;
-                    }
-                    else if (content.contains("向你推荐了")) {//加好友信息 PRIORITY_MAX = 2
-                        String[] cc = content.split("向你推荐了");
-                        sname = cc[0].trim();
-                        scontent = cc[1].trim();
-                        hasAttentionGZH = true;
-                    }
-                    else
-                    {
-                        String[] cc = content.split("\\:");
-                        if(cc.length >= 2) {
-                            sname = cc[0].trim();
-                            scontent = cc[1].trim();
-                        }
-                        else{
-                            scontent = content;
-                        }
-                        hasAction = true;
-                    }
+                    notification_text = notification.tickerText.toString();
+                    hasNotification = true;
                 }
                 PendingIntent pendingIntent = notification.contentIntent;
                 try {

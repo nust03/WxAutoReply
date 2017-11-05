@@ -438,17 +438,17 @@ public class NodeFunc {
         if(root_node != null){
             List<AccessibilityNodeInfo> nodeInfoList = root_node.findAccessibilityNodeInfosByViewId(resource_id);
             if(nodeInfoList.size() == 0){
-                LogToFile.write("根据ID=" + resource_id + "未发现节点！");
+                //LogToFile.write("根据ID=" + resource_id + "未发现节点！");
             }
             else{
-                LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
+                //LogToFile.write("根据ID=" + resource_id + " 发现节点！count=" + String.valueOf(nodeInfoList.size()));
                 int i = 0 ;
                 for(AccessibilityNodeInfo sub_node : nodeInfoList)
                 {
                     String class_name = getClassName(sub_node);
                     if(ClassName.trim().equalsIgnoreCase(class_name) && getPackageName(sub_node).equalsIgnoreCase(Wx_PackageName)){
                         node  = sub_node;
-                        LogToFile.write("根据ID=" + resource_id + ",NodeText=" + ClassName + " 发现节点！");
+                        //LogToFile.write("根据ID=" + resource_id + ",NodeText=" + ClassName + " 发现节点！");
                         break;
                     }
                 }
