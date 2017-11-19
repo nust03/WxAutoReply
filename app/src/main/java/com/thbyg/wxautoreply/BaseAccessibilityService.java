@@ -184,7 +184,8 @@ public class BaseAccessibilityService extends AccessibilityService {
     }
 
     public void recycle(AccessibilityNodeInfo info,List<AccessibilityNodeInfo> nodeList,boolean isPrint,int level) {
-        if(isPrint && (info.getText() != null || info.getContentDescription() != null)) LogToFile.write("Level: " + String.valueOf(level) + " ,node isVisibleToUser=" + String.valueOf(info.isVisibleToUser()) + ";info:" + info.toString());
+        //if(isPrint && (info.getText() != null || info.getContentDescription() != null)) LogToFile.write("Level: " + String.valueOf(level) + " ,node isVisibleToUser=" + String.valueOf(info.isVisibleToUser()) + ";info:" + info.toString());
+        if(isPrint ) LogToFile.write("Level: " + String.valueOf(level) + " ,node getPackageName=" + String.valueOf(info.getPackageName()) + ";info:" + info.toString());
         nodeList.add(info);
         if (info.getChildCount() == 0) {
 
