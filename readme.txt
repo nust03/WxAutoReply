@@ -5,3 +5,6 @@ UI_Title=当前所在页面,公众号；'公众号';currentActivityName=com.tenc
 UI_Title=当前所在页面,与每日优惠券的聊天；'每日优惠券界面';currentActivityName=com.tencent.mm/.ui.chatting.En_5b8fbb1e
 UI_Title=当前所在页面,万众优惠券;'信息阅读界面';currentActivityName=com.tencent.mm/.plugin.webview.ui.tools.WebViewUI
 UI_Title=当前所在页面,万众优惠券；'公众号的详细资料页面'；currentActivityName=com.tencent.mm/.plugin.profile.ui.ContactInfoUI
+UI_Title=当前所在页面,详细资料;currentActivityName=com.tencent.mm/.plugin.profile.ui.ContactInfoUI
+UI_Title=当前所在页面,新的朋友;currentActivityName=com.tencent.mm/.plugin.subapp.ui.friend.FMessageConversationUI
+UI_Title=当前所在页面,朋友验证;currentActivityName=com.tencent.mm/.plugin.profile.ui.SayHiWithSnsPermissionUI

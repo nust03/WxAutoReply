@@ -573,7 +573,7 @@ public class AutomationService extends BaseAccessibilityService {
                 LogToFile.write("检测到“切换到键盘”按钮，点击。");
                 clickNode(switch2keyboard_node,delay_after_click);success_click_btn_count++;
             }
-            if (!top_left_text.isEmpty() && top_left_node != null && chat_node != null && switch2talk_node != null && success_click_btn_count == 0 ) {
+            if (currentActivityName.contains(".ui.LauncherUI") && success_click_btn_count == 0 ) {
                 String msg = autoplay_msg[FuncTools.getRandom(autoplay_msg.length)] + ",@" + sname;
                 if (sname.equalsIgnoreCase("史言兵") || sname.equalsIgnoreCase("优惠券搬运工")) {
                     if (scontent.indexOf("command") == 0) {
