@@ -188,8 +188,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void btn_SendLogMail(View view) {
         String path = LogToFile.getLogFile().getPath();
-        MailManager.getInstance().sendMailWithFile("nust03@163.com", "APP运行日志", "APP run log.", path);
-        Toast.makeText(this, "发送邮件到nust03@163.com成功。", Toast.LENGTH_SHORT).show();
+        MailManager.getInstance().sendMailWithFile("18606612@qq.com", "APP运行日志", "APP run log.", path);
+        Toast.makeText(this, "发送邮件到18606612@qq.com成功。", Toast.LENGTH_SHORT).show();
     }
 
     public void btn_DelLogFile(View view) {

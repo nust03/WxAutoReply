@@ -9,6 +9,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.os.Build;
@@ -109,8 +111,10 @@ public class AutomationService extends BaseAccessibilityService {
     //endregion
     public void onAccessibilityEvent(final AccessibilityEvent event) {
         int eventType = event.getEventType();
-        if(event.getPackageName().toString().equalsIgnoreCase(NodeFunc.Wx_PackageName) == false) return;
-        String s = String.format("=====处理 event=%s 开始...", AccessibilityEvent.eventTypeToString(eventType)) + ",UI_Title=" + NodeFunc.getContentDescription(this.getRootInActiveWindow());
+        if(event.getPackageName().toString().equalsIgnoreCase("com.tencent.mm") == false) return;
+        //if(eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)  currentActivityName = setCurrentActivityName(event);
+        currentActivityName = setCurrentActivityName(event);
+        String s = String.format("=====处理 event=%s 开始...", AccessibilityEvent.eventTypeToString(eventType)) + ",UI_Title=" + NodeFunc.getContentDescription(this.getRootInActiveWindow()) + ",CurrentActivityName=" + currentActivityName;
         //s +=  ",PackageName=" + event.getPackageName().toString() + ",ClassName=" + event.getClassName().toString() + ",CurrentActivityName=" + setCurrentActivityName(event);
         LogToFile.write(s);
         if(locked == true) {
@@ -141,7 +145,7 @@ public class AutomationService extends BaseAccessibilityService {
                     //endregion
                 case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
                     if(event.getPackageName().equals("com.tencent.mm") ) {
-                        currentActivityName = setCurrentActivityName(event);
+                        //currentActivityName = setCurrentActivityName(event);
                         LogToFile.write("TYPE_WINDOW_STATE_CHANGED:currentActivityName=" + currentActivityName);
                         LogToFile.toast("TYPE_WINDOW_STATE_CHANGED:currentActivityName=" + currentActivityName);
                     }
@@ -204,18 +208,34 @@ public class AutomationService extends BaseAccessibilityService {
     //endregion
     private String setCurrentActivityName(AccessibilityEvent event) {
         String activityname = "";
-        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            return activityname;
-        }
         try {
-            ComponentName componentName = new ComponentName(event.getPackageName().toString(), event.getClassName().toString());
-            getPackageManager().getActivityInfo(componentName, 0);
-            activityname = componentName.flattenToShortString();
-        } catch (Exception e) {
-            activityname = "";
-            LogToFile.write("setCurrentActivityName Fail!Error=" + e.getMessage());
-            LogToFile.toast("setCurrentActivityName Fail!Error=" + e.getMessage());
-        }finally {
+            if (event.getPackageName().toString().equalsIgnoreCase("com.tencent.mm") == false) {
+                if(!currentActivityName.isEmpty()) activityname = currentActivityName;
+            } else {
+                try {
+                    //region 获取PackageManager 和 ActivityInfo
+                    /*
+                    PackageManager pm = getPackageManager();
+                    PackageInfo packinfo = pm.getPackageInfo("com.tencent.mm",PackageManager.GET_ACTIVITIES);
+                    ActivityInfo[] activityInfos = packinfo.activities;
+                    for(int i=0;i<activityInfos.length;i++){
+                        ActivityInfo activityInfo = activityInfos[i];
+
+                        LogToFile.write(String.valueOf(i) + ":" + activityInfo.name);
+                    }
+                    */
+                    //endregion
+                    ComponentName componentName = new ComponentName(event.getPackageName().toString(), event.getClassName().toString());
+                    getPackageManager().getActivityInfo(componentName, 0);
+                    activityname = componentName.flattenToShortString();
+                } catch (Exception e) {
+                    activityname = "";
+                    LogToFile.write("setCurrentActivityName Fail!Error=" + e.getMessage());
+                    //LogToFile.toast("setCurrentActivityName Fail!Error=" + e.getMessage());
+                }
+            }
+        }
+        finally {
             if(activityname.isEmpty()) activityname = currentActivityName;
             return activityname;
         }
@@ -1015,6 +1035,7 @@ public class AutomationService extends BaseAccessibilityService {
     //endregion
     public void dealReadMPArticle(AccessibilityEvent event){
         String gzh_name = "这里是连云港";
+        gzh_name = MP_Account_Name;
         LogToFile.write("接到阅读公众号命令，阅读公众号文章开始运行,（重写的方法）dealReadMPArticle is running...");
         //region 参数定义
         int success_click_btn_count = 0;
@@ -1092,98 +1113,134 @@ public class AutomationService extends BaseAccessibilityService {
             //endregion3222222222222222222222222222222222222222222222222222222222222222222222222222222222
             //region 逻辑执行部分
             //this.printNodeInfo(linearLayout_node);
-            if(address_node != null && gzh_node == null && success_click_btn_count == 0){
-                clickNode(address_node,delay_after_click);success_click_btn_count++;
-                run_msg = "检测到“通讯录”node，但没有检测到“公众号”node，应该是在非“通讯录”页面，故点击“通讯录”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
-            }
-            if(address_node != null && gzh_node != null && success_click_btn_count == 0){
-                clickNode(gzh_node,delay_after_click);success_click_btn_count++;
-                run_msg = "检测到“通讯录”node 和 “公众号”node，应该是在“通讯录”页面，故点击“公众号”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
-            }
-            if(ui_title.equalsIgnoreCase("当前所在页面,公众号") && search_node != null && success_click_btn_count == 0){
-                clickNode(search_node,delay_after_click);success_click_btn_count++;
-                run_msg = "当前所在页面,公众号，点击“搜索”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
-            }
-            if(ui_title.isEmpty() && edit_search_node !=  null && success_click_btn_count == 0){
-                edit_search_node.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
-                ClipData clip = ClipData.newPlainText("label", gzh_name);
-                ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                clipboardManager.setPrimaryClip(clip);
-                boolean f = edit_search_node.performAction(AccessibilityNodeInfo.ACTION_PASTE);
-                success_click_btn_count++;
-                run_msg = "当前所在公众号“搜索”页面，在Edit输入要查找的公众号=" + gzh_name  + ",success_click_btn_count=" + String.valueOf(success_click_btn_count);
-                run_msg += ",粘贴是否成功标识 f=" + String.valueOf(f);
-            }
-            if(ui_title.isEmpty() && gzh_account_node !=  null && success_click_btn_count == 0){
-                clickNode(gzh_account_node,delay_after_click);success_click_btn_count++;
-                run_msg = "当前所在公众号“搜索”页面，已查找到公众号=" + gzh_name + "并点击,success_click_btn_count=" + String.valueOf(success_click_btn_count);
-            }
-            if(ui_title.isEmpty() && NodeFunc.getText(edit_search_node).equalsIgnoreCase(gzh_name) && no_result_node !=  null && success_click_btn_count == 0){
-                clickNode(gzh_account_node,delay_after_click);success_click_btn_count++;
-                run_msg = "当前所在公众号“搜索”页面，未查找到公众号=" + gzh_name + "，转入关注流程。,success_click_btn_count=" + String.valueOf(success_click_btn_count);
-                hasReadMPAticle = false;
-                hasMsgSend = true;//有待发送的信息
-                MsgReadySend.add(sname);//第一个参数是接受人，其余的参数是待发送的信息
-                MsgReadySend.add(run_msg);
-            }
-            //region 当前所在页面是 MP_Account_Name 的图文信息界面，按照单图文、多图文头条、多图文其他条的顺序进行阅读
-            if(ui_title.equalsIgnoreCase("当前所在页面,与" + gzh_name + "的聊天") && top_left_node !=  null && success_click_btn_count == 0){
-                this.printNodeInfo(linearLayout_node);
-                if(msg_button_node != null && success_click_btn_count == 0){
-                    clickNode(msg_button_node,delay_after_click);success_click_btn_count++;
-                    LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“消息”按钮，点击。success_click_btn_count=" +  String.valueOf(success_click_btn_count));
+            //region 当前所在页面：主页面 ： “com.tencent.mm/.ui.LauncherUI”
+            if(currentActivityName.equalsIgnoreCase("com.tencent.mm/.ui.LauncherUI") && success_click_btn_count == 0) {
+                if (address_node != null && gzh_node == null && success_click_btn_count == 0) {
+                    clickNode(address_node, delay_after_click);
+                    success_click_btn_count++;
+                    run_msg = "检测到“通讯录”node，但没有检测到“公众号”node，应该是在非“通讯录”页面，故点击“通讯录”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
                 }
-                if(switch2keyboard_node != null && success_click_btn_count == 0){
-                    clickNode(switch2keyboard_node,delay_after_click);success_click_btn_count++;
-                    LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“切换到键盘”按钮，点击。success_click_btn_count=" +  String.valueOf(success_click_btn_count));
+                if (address_node != null && gzh_node != null && success_click_btn_count == 0) {
+                    clickNode(gzh_node, delay_after_click);
+                    success_click_btn_count++;
+                    run_msg = "检测到“通讯录”node 和 “公众号”node，应该是在“通讯录”页面，故点击“公众号”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
                 }
-                if(gzh_edittext_node != null && success_click_btn_count == 0){
-                    LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“EditText”输入框，输入要阅读公众号参数。");
-                    paste_sendMsg(gzh_edittext_node,MP_Account_Name);success_click_btn_count++;
-                }
-                if(single_article_node_count > 0 && success_click_btn_count == 0){//发现有单图文，开始点击阅读单图文
-                    LogToFile.write("在图文界面发现单图文 single_article_node_count=" +  String.valueOf(single_article_node_count));
-                    for(AccessibilityNodeInfo node : single_article_node_list){
-                        if(!NodeFunc.getText(node).isEmpty() && !Readed_Text_List.contains(node)) {
-                            LogToFile.write("公众号：" + gzh_name + " ,阅读单图文：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
-                            clickNode(node,delay_after_read_click);success_click_btn_count++;Readed_Text_List.add(node);break;
-                        }
-                    }
-                }
-                if(mularticle_header_node_count > 0 && success_click_btn_count == 0){//发现有多图文，开始点击阅读多图文的头条
-                    LogToFile.write("在图文界面发现多图文,多图文的头条 mularticle_header_node_count=" +  String.valueOf(mularticle_header_node_count));
-                    for(AccessibilityNodeInfo node : mularticle_header_node_list){
-                        if(!NodeFunc.getText(node).isEmpty() && !Readed_Text_List.contains(node)) {
-                            LogToFile.write("公众号：" + gzh_name + " ,阅读多图文的头条：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
-                            clickNode(node,delay_after_read_click);success_click_btn_count++;Readed_Text_List.add(node);break;
-                        }
-
-                    }
-                }
-                if(mularticle_other_node_count > 0 && success_click_btn_count == 0){//发现有多图文，开始点击阅读多图文的其他条
-                    LogToFile.write("在图文界面发现多图文,多图文的其他条 mularticle_other_node_count=" +  String.valueOf(mularticle_other_node_count));
-                    for(AccessibilityNodeInfo node : mularticle_other_node_list){
-                        if(!NodeFunc.getText(node).isEmpty()  && !Readed_Text_List.contains(node)) {
-                            LogToFile.write("公众号：" + gzh_name + " ,阅读多图文的其他条：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
-                            clickNode(node,delay_after_read_click);success_click_btn_count++;Readed_Text_List.add(node);break;
-                        }
-                    }
-                }
-                if(tuwen_count == 0 && success_click_btn_count == 0){
-                    LogToFile.write("在图文界面未发现图文信息,转入“查看历史信息” tuwen_count=" +  String.valueOf(tuwen_count));
-                    clickNode(edit_search_node,delay_after_back_click);success_click_btn_count++;
-                }
-            }
-            if(ui_title.equalsIgnoreCase("当前所在页面,与" + gzh_name + "的聊天") && more_node !=  null && history_msg_node != null &&  success_click_btn_count == 0){
-                LogToFile.write("在“查看历史信息”界面，点击进入“查看历史信息”按钮， tuwen_count=" +  String.valueOf(tuwen_count));
-                clickNode(history_msg_node,delay_after_back_click);success_click_btn_count++;
             }
             //endregion
-            if(backbtn_node != null && TuWenReadUI_WebPage_node != null && success_click_btn_count == 0){//发现返回按钮
-                LogToFile.write("在图文阅读界面点击“返回”按钮。");
-                clickNode(backbtn_node,delay_after_back_click);success_click_btn_count++;
-                LogToFile.write("公众号：" + this.MP_Account_Name + " ,点击“返回”,等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
+            //region 当前所在页面：公众号页面，完成特定公众号的搜索 UI_Title=当前所在页面,公众号；currentActivityName=com.tencent.mm/.plugin.brandservice.ui.BrandServiceIndexUI ；
+            if (ui_title.equalsIgnoreCase("当前所在页面,公众号") && search_node != null && success_click_btn_count == 0) {
+                clickNode(search_node, delay_after_click);
+                success_click_btn_count++;
+                run_msg = "当前所在页面,公众号，点击“搜索”node,success_click_btn_count=" + String.valueOf(success_click_btn_count);
             }
+            //endregion
+            //region 当前所在页面：'公众号搜索界面';currentActivityName=com.tencent.mm/.plugin.brandservice.ui.BrandServiceLocalSearchUI
+            if(currentActivityName.equalsIgnoreCase("com.tencent.mm/.plugin.brandservice.ui.BrandServiceLocalSearchUI")) {
+                if (ui_title.isEmpty() && edit_search_node != null && success_click_btn_count == 0) {
+                    edit_search_node.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+                    ClipData clip = ClipData.newPlainText("label", gzh_name);
+                    ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    clipboardManager.setPrimaryClip(clip);
+                    boolean f = edit_search_node.performAction(AccessibilityNodeInfo.ACTION_PASTE);
+                    success_click_btn_count++;
+                    run_msg = "当前所在公众号“搜索”页面，在Edit输入要查找的公众号=" + gzh_name + ",success_click_btn_count=" + String.valueOf(success_click_btn_count);
+                    run_msg += ",粘贴是否成功标识 f=" + String.valueOf(f);
+                }
+                if (ui_title.isEmpty() && gzh_account_node != null && success_click_btn_count == 0) {
+                    clickNode(gzh_account_node, delay_after_click);
+                    success_click_btn_count++;
+                    run_msg = "当前所在公众号“搜索”页面，已查找到公众号=" + gzh_name + "并点击,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+                }
+                if (ui_title.isEmpty() && NodeFunc.getText(edit_search_node).equalsIgnoreCase(gzh_name) && no_result_node != null && success_click_btn_count == 0) {
+                    clickNode(gzh_account_node, delay_after_click);
+                    success_click_btn_count++;
+                    run_msg = "当前所在公众号“搜索”页面，未查找到公众号=" + gzh_name + "，转入关注流程。,success_click_btn_count=" + String.valueOf(success_click_btn_count);
+                    hasReadMPAticle = false;
+                    hasMsgSend = true;//有待发送的信息
+                    MsgReadySend.add(sname);//第一个参数是接受人，其余的参数是待发送的信息
+                    MsgReadySend.add(run_msg);
+                }
+            }
+            //endregion
+            //region 当前所在页面是 MP_Account_Name 的图文信息界面，按照单图文、多图文头条、多图文其他条的顺序进行阅读 UI_Title=当前所在页面,与每日优惠券的聊天；'每日优惠券界面';currentActivityName=com.tencent.mm/.ui.chatting.En_5b8fbb1e
+            if(currentActivityName.equalsIgnoreCase("com.tencent.mm/.ui.chatting.En_5b8fbb1e")) {
+                if (ui_title.equalsIgnoreCase("当前所在页面,与" + gzh_name + "的聊天") && top_left_node != null && success_click_btn_count == 0) {
+                    this.printNodeInfo(linearLayout_node);
+                    if (msg_button_node != null && success_click_btn_count == 0) {
+                        clickNode(msg_button_node, delay_after_click);
+                        success_click_btn_count++;
+                        LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“消息”按钮，点击。success_click_btn_count=" + String.valueOf(success_click_btn_count));
+                    }
+                    if (switch2keyboard_node != null && success_click_btn_count == 0) {
+                        clickNode(switch2keyboard_node, delay_after_click);
+                        success_click_btn_count++;
+                        LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“切换到键盘”按钮，点击。success_click_btn_count=" + String.valueOf(success_click_btn_count));
+                    }
+                    if (gzh_edittext_node != null && success_click_btn_count == 0) {
+                        LogToFile.write("当前所在页面,与" + gzh_name + "的聊天,发现“EditText”输入框，输入要阅读公众号参数。");
+                        paste_sendMsg(gzh_edittext_node, MP_Account_Name);
+                        success_click_btn_count++;
+                    }
+                    if (single_article_node_count > 0 && success_click_btn_count == 0) {//发现有单图文，开始点击阅读单图文
+                        LogToFile.write("在图文界面发现单图文 single_article_node_count=" + String.valueOf(single_article_node_count));
+                        for (AccessibilityNodeInfo node : single_article_node_list) {
+                            if (!NodeFunc.getText(node).isEmpty() && !Readed_Text_List.contains(node)) {
+                                LogToFile.write("公众号：" + gzh_name + " ,阅读单图文：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
+                                clickNode(node, delay_after_read_click);
+                                success_click_btn_count++;
+                                Readed_Text_List.add(node);
+                                break;
+                            }
+                        }
+                    }
+                    if (mularticle_header_node_count > 0 && success_click_btn_count == 0) {//发现有多图文，开始点击阅读多图文的头条
+                        LogToFile.write("在图文界面发现多图文,多图文的头条 mularticle_header_node_count=" + String.valueOf(mularticle_header_node_count));
+                        for (AccessibilityNodeInfo node : mularticle_header_node_list) {
+                            if (!NodeFunc.getText(node).isEmpty() && !Readed_Text_List.contains(node)) {
+                                LogToFile.write("公众号：" + gzh_name + " ,阅读多图文的头条：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
+                                clickNode(node, delay_after_read_click);
+                                success_click_btn_count++;
+                                Readed_Text_List.add(node);
+                                break;
+                            }
+
+                        }
+                    }
+                    if (mularticle_other_node_count > 0 && success_click_btn_count == 0) {//发现有多图文，开始点击阅读多图文的其他条
+                        LogToFile.write("在图文界面发现多图文,多图文的其他条 mularticle_other_node_count=" + String.valueOf(mularticle_other_node_count));
+                        for (AccessibilityNodeInfo node : mularticle_other_node_list) {
+                            if (!NodeFunc.getText(node).isEmpty() && !Readed_Text_List.contains(node)) {
+                                LogToFile.write("公众号：" + gzh_name + " ,阅读多图文的其他条：" + NodeFunc.getText(node) + ",等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
+                                clickNode(node, delay_after_read_click);
+                                success_click_btn_count++;
+                                Readed_Text_List.add(node);
+                                break;
+                            }
+                        }
+                    }
+                    if (tuwen_count == 0 && success_click_btn_count == 0) {
+                        LogToFile.write("在图文界面未发现图文信息,转入“查看历史信息” tuwen_count=" + String.valueOf(tuwen_count));
+                        clickNode(edit_search_node, delay_after_back_click);
+                        success_click_btn_count++;
+                    }
+                }
+                if (ui_title.equalsIgnoreCase("当前所在页面,与" + gzh_name + "的聊天") && more_node != null && history_msg_node != null && success_click_btn_count == 0) {
+                    LogToFile.write("在“查看历史信息”界面，点击进入“查看历史信息”按钮， tuwen_count=" + String.valueOf(tuwen_count));
+                    clickNode(history_msg_node, delay_after_back_click);
+                    success_click_btn_count++;
+                }
+            }
+            //endregion
+            //region 当前所在页面：UI_Title=当前所在页面,万众优惠券;'信息阅读界面';currentActivityName=com.tencent.mm/.plugin.webview.ui.tools.WebViewUI
+            if(currentActivityName.equalsIgnoreCase("com.tencent.mm/.plugin.webview.ui.tools.WebViewUI")) {
+                if (backbtn_node != null && TuWenReadUI_WebPage_node != null && success_click_btn_count == 0) {//发现返回按钮
+                    LogToFile.write("在图文阅读界面点击“返回”按钮。");
+                    clickNode(backbtn_node, delay_after_back_click);
+                    success_click_btn_count++;
+                    LogToFile.write("公众号：" + this.MP_Account_Name + " ,点击“返回”,等待 " + String.valueOf(delay_after_read_click) + " 毫秒。");
+                }
+            }
+            //endregion
             if(Readed_Text_List.size() >= tuwen_count && tuwen_count > 0 && success_click_btn_count == 0){
                 String msg = "阅读公众号=" + gzh_name + " 图文信息结束，共阅读 " + String.valueOf(tuwen_count) + " 条。";
                 LogToFile.write(msg);
