@@ -28,8 +28,8 @@ import javax.mail.internet.MimeMultipart;
  */
 public class MailManager {
 
-    private static final String SENDER_NAME = "15651499096@wo.cn";
-    private static final String SENDER_PASS = "5475289";
+    private static final String SENDER_NAME = "XXXXXX@XX.cn";
+    private static final String SENDER_PASS = "XXXXXXXXX";
     private static final String VALUE_MAIL_HOST = "smtp.wo.cn";
     private static final String KEY_MAIL_HOST = "mail.smtp.host";
     private static final String KEY_MAIL_AUTH = "mail.smtp.auth";
